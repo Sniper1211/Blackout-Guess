@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜谜游戏</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="theme-toggle" id="themeToggle">🌙</div>
+    
+    <div class="game-container">
+        <h1>猜谜游戏</h1>
+        
+        <div class="difficulty-selector">
+            <label for="difficultySelector">难度：</label>
+            <select id="difficultySelector">
+                <option value="easy">简单</option>
+                <option value="medium" selected>中等</option>
+                <option value="hard">困难</option>
+            </select>
+        </div>
+        
+        <div class="text-display" id="textDisplay"></div>
+        
+        <div class="input-section">
+            <input type="text" id="letterInput" maxlength="1" placeholder="输入汉字">
+            <button onclick="guessLetter()">猜测文字</button>
+        </div>
+        
+
+        
+        <div class="message" id="message"></div>
+        
+        <div class="stats-container">
+            <div class="stats">
+                已猜测次数：<span id="guessCount">0</span>
+            </div>
+            <div class="timer">
+                用时：<span id="timer">00:00</span>
+            </div>
+            <div class="score">
+                得分：<span id="score">0</span>
+            </div>
+        </div>
+        
+        <div class="guessed-letters">
+            <h3>已猜过的字：</h3>
+            <div class="letter-list" id="guessedLetters"></div>
+        </div>
+        
+        <div class="win-message" id="winMessage"></div>
+        
+        <div class="button-group">
+            <button class="reset-button" onclick="resetGame()">重新开始</button>
+            <button class="highscore-button" onclick="showHighScores()">查看排行榜</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

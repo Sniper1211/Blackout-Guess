@@ -3,60 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>猜谜游戏</title>
+    <title>古诗词猜字游戏</title>
+    <meta name="description" content="一个有趣的古诗词猜字游戏，通过猜测汉字来完成经典诗词">
+    <meta name="keywords" content="古诗词,猜字游戏,中文,教育,娱乐">
     <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
-    <div class="theme-toggle" id="themeToggle">🌙</div>
+    <!-- 加载指示器 -->
+    <div id="loadingIndicator" class="loading-indicator">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在加载游戏...</div>
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="control-panel">
+        <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
+        <button class="sound-toggle" id="soundToggle" title="切换音效">🔊</button>
+        <div class="volume-control">
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="0.5" title="音量控制">
+        </div>
+    </div>
     
     <div class="game-container">
-        <h1>猜谜游戏</h1>
-        
-        <div class="difficulty-selector">
-            <label for="difficultySelector">难度：</label>
-            <select id="difficultySelector">
-                <option value="easy">简单</option>
-                <option value="medium" selected>中等</option>
-                <option value="hard">困难</option>
-            </select>
-        </div>
-        
-        <div class="text-display" id="textDisplay"></div>
-        
-        <div class="input-section">
-            <input type="text" id="letterInput" maxlength="1" placeholder="输入汉字">
-            <button onclick="guessLetter()">猜测文字</button>
-        </div>
-        
-
-        
-        <div class="message" id="message"></div>
+        <header class="game-header">
+            <h1>古诗词猜字游戏</h1>
+            <p class="game-subtitle">通过猜测汉字，完成经典古诗词</p>
+        </header>
         
         <div class="stats-container">
-            <div class="stats">
-                已猜测次数：<span id="guessCount">0</span>
+            <div class="stats-item">
+                <div class="stats-label">已猜测次数</div>
+                <div class="stats-value" id="guessCount">0</div>
             </div>
-            <div class="timer">
-                用时：<span id="timer">00:00</span>
+            <div class="stats-item">
+                <div class="stats-label">用时</div>
+                <div class="stats-value" id="timer">00:00</div>
             </div>
-            <div class="score">
-                得分：<span id="score">0</span>
+            <div class="stats-item">
+                <div class="stats-label">得分</div>
+                <div class="stats-value" id="score">0</div>
             </div>
         </div>
+        
+        <div class="text-display" id="textDisplay" role="main" aria-label="诗词显示区域"></div>
+        
+        <div class="input-section">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="letterInput" 
+                    maxlength="1" 
+                    placeholder="输入汉字"
+                    aria-label="输入要猜测的汉字"
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+                <button id="guessButton" onclick="guessLetter()" class="guess-button primary" aria-label="提交猜测">
+                    <span class="button-icon">✨</span>
+                    <span class="button-text">猜测文字</span>
+                </button>
+                <button class="action-button reset-button-mini" onclick="resetGame()" aria-label="重新开始游戏" title="重新开始">
+                    🔄
+                </button>
+            </div>
+            <div class="secondary-actions">
+                <button id="hintButton" onclick="useHint()" class="action-button hint-button" aria-label="使用提示">
+                    <span class="button-icon">💡</span>
+                    <span class="button-text">获取提示</span>
+                </button>
+                <button class="action-button leaderboard-button" onclick="showHighScores()" aria-label="查看排行榜">
+                    <span class="button-icon">🏆</span>
+                    <span class="button-text">排行榜</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="message" id="message" role="status" aria-live="polite"></div>
         
         <div class="guessed-letters">
             <h3>已猜过的字：</h3>
-            <div class="letter-list" id="guessedLetters"></div>
+            <div class="letter-list" id="guessedLetters" aria-label="已猜测的字符列表"></div>
         </div>
         
-        <div class="win-message" id="winMessage"></div>
+        <div class="win-message" id="winMessage" role="dialog" aria-label="游戏完成信息"></div>
         
-        <div class="button-group">
-            <button class="reset-button" onclick="resetGame()">重新开始</button>
-            <button class="highscore-button" onclick="showHighScores()">查看排行榜</button>
+
+
+        <div class="game-info">
+            <details>
+                <summary>游戏说明</summary>
+                <div class="info-content">
+                    <h4>🎯 游戏目标</h4>
+                    <p>通过猜测汉字来完成古诗词，当标题完全显示时游戏结束。</p>
+                    
+                    <h4>🎮 操作方式</h4>
+                    <ul>
+                        <li>在输入框中输入汉字，按回车或点击"猜测文字"按钮</li>
+                        <li>使用 Ctrl+R (Mac: Cmd+R) 快速重新开始</li>
+                        <li>使用 Ctrl+H (Mac: Cmd+H) 使用提示</li>
+                    </ul>
+                    
+                    <h4>📊 计分规则</h4>
+                    <ul>
+                        <li>基础分数：1000分</li>
+                        <li>时间扣分：每秒扣2分（最多扣500分）</li>
+                        <li>猜测扣分：每次猜测扣10分</li>
+                        <li>提示惩罚：使用提示扣100分</li>
+                    </ul>
+                </div>
+            </details>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- 彩带动画容器 -->
+    <div id="confettiContainer"></div>
+
+    <!-- 脚本文件 -->
+    <script src="js/GameEngine.js?v=2.0"></script>
+    <script src="js/UIManager.js?v=2.0"></script>
+    <script src="js/AudioManager.js?v=2.0"></script>
+    <script src="js/app.js?v=2.0"></script>
 </body>
 </html>

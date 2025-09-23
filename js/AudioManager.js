@@ -1,6 +1,7 @@
 /**
  * 音频管理器
  * 负责游戏音效和背景音乐
+ * 影响用户体验，可注释掉
  */
 class AudioManager {
     constructor() {

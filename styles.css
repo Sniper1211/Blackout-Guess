@@ -69,12 +69,12 @@ body {
     100% { transform: rotate(360deg); }
 }
 
-/* 控制面板 */
+/* 控制面板 - 隐藏音量和主题切换功能 */
 .control-panel {
     position: fixed;
     top: 20px;
     right: 20px;
-    display: flex;
+    display: none; /* 隐藏整个控制面板 */
     gap: 10px;
     align-items: center;
     z-index: 1000;
@@ -1032,14 +1032,6 @@ body {
 
 /* 响应式设计 */
 @media (max-width: 1024px) {
-    .control-panel {
-        position: relative;
-        top: auto;
-        right: auto;
-        margin-bottom: 20px;
-        justify-content: center;
-    }
-    
     .stats-container {
         grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     }
@@ -1154,21 +1146,7 @@ body {
         font-size: 3rem;
     }
     
-    .control-panel {
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 8px;
-    }
-    
-    .theme-toggle, .sound-toggle {
-        width: 45px;
-        height: 45px;
-        font-size: 20px;
-    }
-    
-    .volume-control input[type="range"] {
-        width: 60px;
-    }
+
 }
 
 @media (max-width: 480px) {
@@ -1242,10 +1220,7 @@ body {
         font-size: 2.5rem;
     }
     
-    .control-panel {
-        position: static;
-        margin-bottom: 15px;
-    }
+
 }
 
 /* 高分辨率屏幕优化 */

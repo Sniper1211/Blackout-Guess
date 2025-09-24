@@ -249,7 +249,8 @@ class UIManager {
         }
         
         if (this.elements.score) {
-            this.elements.score.textContent = this.gameEngine.calculateScore();
+            const scoreData = this.gameEngine.calculateScore();
+            this.elements.score.textContent = scoreData.total;
         }
     }
 

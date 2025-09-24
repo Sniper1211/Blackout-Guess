@@ -227,7 +227,7 @@ class UIManager {
             return;
         }
 
-        Array.from(this.gameEngine.guessedLetters).sort().forEach(letter => {
+        Array.from(this.gameEngine.guessedLetters).forEach(letter => {
             const span = document.createElement('span');
             span.className = 'letter-item';
             span.textContent = letter;

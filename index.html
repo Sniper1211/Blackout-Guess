@@ -120,12 +120,62 @@
                     
                     <div class="help-section">
                         <h4>📊 计分规则</h4>
-                        <ul>
-                            <li>基础分数：1000分</li>
-                            <li>时间扣分：每秒扣2分（最多扣500分）</li>
-                            <li>猜测扣分：每次猜测扣10分</li>
-                            <li>提示惩罚：使用提示扣100分</li>
-                        </ul>
+                        <div class="scoring-details">
+                            <div class="score-category">
+                                <strong>🎯 基础得分</strong>
+                                <ul>
+                                    <li>保底分数：500分（不会被扣除）</li>
+                                    <li>常用字：+20分/字（的、了、在、是等）</li>
+                                    <li>一般字：+30分/字（大部分汉字）</li>
+                                    <li>生僻字：+50分/字（霜、鹳、蓑等）</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="score-category">
+                                <strong>🔥 连击奖励</strong>
+                                <ul>
+                                    <li>2连击：+30分 | 3连击：+60分</li>
+                                    <li>4连击：+100分 | 5连击+：+150分</li>
+                                    <li>完美连击（零错误）：额外+300分</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="score-category">
+                                <strong>⚡ 速度奖励</strong>
+                                <ul>
+                                    <li>30秒内：+200分 | 1分钟内：+150分</li>
+                                    <li>2分钟内：+100分 | 3分钟内：+50分</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="score-category">
+                                <strong>🎖️ 其他奖励</strong>
+                                <ul>
+                                    <li>准确率90%+：+150分 | 80%+：+100分</li>
+                                    <li>不用提示：+200分 | 仅用1次：+100分</li>
+                                    <li>诗名全对：+100分</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="score-category penalty">
+                                <strong>⚠️ 轻微惩罚</strong>
+                                <ul>
+                                    <li>使用提示：-30分/次</li>
+                                    <li>连续猜错3次：-20分</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="level-system">
+                            <strong>🏆 等级系统</strong>
+                            <div class="levels">
+                                <span class="level bronze">🥉 青铜 500-799</span>
+                                <span class="level silver">🥈 白银 800-1199</span>
+                                <span class="level gold">🥇 黄金 1200-1599</span>
+                                <span class="level diamond">💎 钻石 1600-1999</span>
+                                <span class="level king">👑 王者 2000+</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

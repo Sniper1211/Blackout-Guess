@@ -144,6 +144,26 @@ class GameEngine {
         this.currentScore = 0;
         this.titleGuessedNotified = false;
         this.hintUsed = false;
+        
+        // 新积分系统相关属性
+        this.consecutiveHits = 0; // 当前连击数
+        this.maxConsecutiveHits = 0; // 最大连击数
+        this.correctGuesses = 0; // 正确猜测数
+        this.wrongGuesses = 0; // 错误猜测数
+        this.hintCount = 0; // 使用提示次数
+        this.scoreBreakdown = { // 分数明细
+            base: 500,
+            characters: 0,
+            combo: 0,
+            speed: 0,
+            accuracy: 0,
+            strategy: 0,
+            achievements: 0,
+            penalties: 0
+        };
+        
+        // 常用字列表（用于计分）
+        this.commonChars = new Set(['的', '了', '在', '是', '有', '我', '他', '她', '它', '这', '那', '一', '不', '人', '上', '下', '大', '小', '中', '来', '去', '说', '要', '会', '能', '可', '就', '都', '也', '还', '又', '和', '与', '或', '但', '而', '因', '为', '所', '以', '从', '到', '把', '被', '让', '使', '给', '对', '向', '往', '于', '在', '里', '外', '前', '后', '左', '右', '东', '西', '南', '北', '年', '月', '日', '时', '分', '秒', '今', '明', '昨', '早', '晚', '白', '黑', '红', '绿', '蓝', '黄', '紫', '好', '坏', '新', '旧', '多', '少', '高', '低', '长', '短', '快', '慢', '热', '冷', '干', '湿', '美', '丑', '爱', '恨', '喜', '怒', '哀', '乐']);
     }
 
     /**
@@ -224,28 +244,59 @@ class GameEngine {
         // 检查是否猜中
         let found = false;
         const foundPositions = [];
+        let foundCount = 0;
         
         this.hiddenText.forEach((item, index) => {
             if (item.hidden && item.char === letter) {
                 item.hidden = false;
                 item.guessedByUser = true;
                 found = true;
+                foundCount++;
                 foundPositions.push(index);
             }
         });
+
+        // 更新连击和统计
+        if (found) {
+            this.correctGuesses++;
+            this.consecutiveHits++;
+            this.maxConsecutiveHits = Math.max(this.maxConsecutiveHits, this.consecutiveHits);
+        } else {
+            this.wrongGuesses++;
+            this.consecutiveHits = 0; // 重置连击
+        }
 
         // 检查游戏状态
         const titleComplete = this.checkTitleComplete();
         const gameComplete = this.checkGameComplete();
 
+        // 计算得分和奖励信息
+        const scoreInfo = this.calculateScore();
+        
+        let message = found ? `找到了 ${letter}！` : `文章中没有 "${letter}"`;
+        let bonusMessage = '';
+        
+        if (found) {
+            if (foundCount > 1) {
+                bonusMessage += ` 找到${foundCount}个字符！`;
+            }
+            if (this.consecutiveHits >= 2) {
+                bonusMessage += ` ${this.consecutiveHits}连击！`;
+            }
+        }
+
         let result = {
             success: found,
-            message: found ? `找到了 ${letter}！` : `文章中没有 "${letter}"`,
+            message: message + bonusMessage,
             type: found ? 'success' : 'error',
             foundPositions,
+            foundCount,
+            consecutiveHits: this.consecutiveHits,
             titleComplete,
             gameComplete,
-            score: this.calculateScore()
+            score: scoreInfo.total,
+            scoreBreakdown: scoreInfo.breakdown,
+            bonusPoints: scoreInfo.lastBonus
         };
 
         if (titleComplete && !this.titleGuessedNotified) {
@@ -255,11 +306,19 @@ class GameEngine {
             // 标题完成后，游戏也算完成
             this.gameWon = true;
             result.gameComplete = true;
+            // 重新计算最终分数
+            const finalScore = this.calculateScore();
+            result.score = finalScore.total;
+            result.scoreBreakdown = finalScore.breakdown;
         }
 
         if (gameComplete) {
             this.gameWon = true;
             result.gameComplete = true;
+            // 重新计算最终分数
+            const finalScore = this.calculateScore();
+            result.score = finalScore.total;
+            result.scoreBreakdown = finalScore.breakdown;
         }
 
         return result;
@@ -297,31 +356,155 @@ class GameEngine {
     }
 
     /**
-     * 计算分数
+     * 计算分数 - 新积分规则
      */
     calculateScore() {
-        if (this.startTime === 0) return 0;
+        if (this.startTime === 0) {
+            return { total: 500, breakdown: this.scoreBreakdown, lastBonus: 0 };
+        }
 
         const elapsedTime = this.getElapsedTime();
+        let lastBonus = 0; // 本次操作获得的奖励分数
         
-        const baseScore = 1000;
-        const timeDeduction = Math.min(500, elapsedTime * 2);
-        const guessDeduction = this.guessCount * 10;
-        const hintPenalty = this.hintUsed ? 100 : 0;
-        
-        this.currentScore = Math.max(0, Math.floor(
-            baseScore - timeDeduction - guessDeduction - hintPenalty
-        ));
-        
-        return this.currentScore;
+        // 重置分数明细
+        this.scoreBreakdown = {
+            base: 500,
+            characters: 0,
+            combo: 0,
+            speed: 0,
+            accuracy: 0,
+            strategy: 0,
+            achievements: 0,
+            penalties: 0
+        };
+
+        // 1. 基础分数（保底）
+        let totalScore = this.scoreBreakdown.base;
+
+        // 2. 字符得分
+        this.guessedLetters.forEach(letter => {
+            let charScore = 30; // 默认分数
+            if (this.commonChars.has(letter)) {
+                charScore = 20; // 常用字
+            } else if (this.isRareChar(letter)) {
+                charScore = 50; // 生僻字
+            }
+            this.scoreBreakdown.characters += charScore;
+        });
+
+        // 3. 连击奖励
+        if (this.maxConsecutiveHits >= 2) {
+            let comboBonus = 0;
+            if (this.maxConsecutiveHits === 2) comboBonus = 30;
+            else if (this.maxConsecutiveHits === 3) comboBonus = 60;
+            else if (this.maxConsecutiveHits === 4) comboBonus = 100;
+            else if (this.maxConsecutiveHits >= 5) comboBonus = 150;
+            
+            this.scoreBreakdown.combo = comboBonus;
+            
+            // 如果当前正在连击，这是本次的奖励
+            if (this.consecutiveHits >= 2) {
+                if (this.consecutiveHits === 2) lastBonus += 30;
+                else if (this.consecutiveHits === 3) lastBonus += 30; // 60-30
+                else if (this.consecutiveHits === 4) lastBonus += 40; // 100-60
+                else if (this.consecutiveHits >= 5) lastBonus += 50; // 150-100
+            }
+        }
+
+        // 检查完美连击（一次性猜完所有字符）
+        const totalChars = this.hiddenText.filter(item => /[\u4e00-\u9fa5]/.test(item.char)).length;
+        if (this.gameWon && this.correctGuesses === totalChars && this.wrongGuesses === 0) {
+            this.scoreBreakdown.combo += 300;
+            if (this.consecutiveHits === totalChars) {
+                lastBonus += 300;
+            }
+        }
+
+        // 4. 速度奖励
+        if (this.gameWon) {
+            if (elapsedTime <= 30) {
+                this.scoreBreakdown.speed = 200;
+            } else if (elapsedTime <= 60) {
+                this.scoreBreakdown.speed = 150;
+            } else if (elapsedTime <= 120) {
+                this.scoreBreakdown.speed = 100;
+            } else if (elapsedTime <= 180) {
+                this.scoreBreakdown.speed = 50;
+            }
+        }
+
+        // 5. 准确度奖励
+        if (this.guessCount > 0) {
+            const accuracy = this.correctGuesses / this.guessCount;
+            if (accuracy >= 0.9) {
+                this.scoreBreakdown.accuracy = 150;
+            } else if (accuracy >= 0.8) {
+                this.scoreBreakdown.accuracy = 100;
+            } else if (accuracy >= 0.7) {
+                this.scoreBreakdown.accuracy = 50;
+            }
+        }
+
+        // 6. 策略奖励
+        if (this.gameWon) {
+            if (this.hintCount === 0) {
+                this.scoreBreakdown.strategy = 200; // 不使用提示
+            } else if (this.hintCount === 1) {
+                this.scoreBreakdown.strategy = 100; // 仅使用1次提示
+            }
+        }
+
+        // 7. 成就奖励
+        if (this.gameWon) {
+            // 检查标题完成奖励
+            if (this.checkTitleComplete()) {
+                this.scoreBreakdown.achievements += 100;
+            }
+            
+            // 检查一次猜对多个字符的奖励
+            // 这个在guessLetter中实时计算
+        }
+
+        // 8. 惩罚
+        this.scoreBreakdown.penalties = -(this.hintCount * 30); // 每次提示-30分
+        if (this.wrongGuesses >= 3) {
+            this.scoreBreakdown.penalties -= 20; // 连续猜错3次-20分
+        }
+
+        // 计算总分
+        totalScore = this.scoreBreakdown.base + 
+                    this.scoreBreakdown.characters + 
+                    this.scoreBreakdown.combo + 
+                    this.scoreBreakdown.speed + 
+                    this.scoreBreakdown.accuracy + 
+                    this.scoreBreakdown.strategy + 
+                    this.scoreBreakdown.achievements + 
+                    this.scoreBreakdown.penalties;
+
+        this.currentScore = Math.max(500, Math.floor(totalScore)); // 最低500分
+
+        return {
+            total: this.currentScore,
+            breakdown: { ...this.scoreBreakdown },
+            lastBonus: lastBonus
+        };
+    }
+
+    /**
+     * 判断是否为生僻字
+     */
+    isRareChar(char) {
+        // 简单的生僻字判断，可以根据需要扩展
+        const rareChars = new Set(['霜', '鹳', '蓑', '撷', '琼', '楼', '宇', '绮', '户', '婵', '娟', '樯', '橹', '酹', '纶', '巾', '凄', '戚', '憔', '悴', '梧', '桐', '滴', '寻', '觅', '惨', '凄', '将', '息', '敌', '雁', '识', '堆', '积', '损', '摘', '怎', '生', '兼', '黄', '昏', '次', '第', '愁']);
+        return rareChars.has(char);
     }
 
     /**
      * 使用提示
      */
     useHint() {
-        if (this.hintUsed || this.gameWon) {
-            return { success: false, message: '提示已用完或游戏已结束' };
+        if (this.gameWon) {
+            return { success: false, message: '游戏已结束' };
         }
 
         const hiddenChars = this.hiddenText.filter(item => item.hidden);
@@ -341,11 +524,17 @@ class GameEngine {
             }
         });
 
-        this.hintUsed = true;
+        this.hintCount++;
+        this.hintUsed = true; // 保持兼容性
+        
+        // 重置连击（使用提示会中断连击）
+        this.consecutiveHits = 0;
+        
         return { 
             success: true, 
-            message: `提示：显示了字符 "${hintChar.char}"`,
-            hintChar: hintChar.char
+            message: `提示：显示了字符 "${hintChar.char}" (-30分)`,
+            hintChar: hintChar.char,
+            score: this.calculateScore().total
         };
     }
 

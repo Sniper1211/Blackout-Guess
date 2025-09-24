@@ -1809,3 +1809,146 @@ select:focus {
 .dark-theme .breakdown-item.penalty {
     color: #ff6b6b;
 }
+
+/* 游戏说明中的计分规则样式 */
+.scoring-details {
+    margin: 15px 0;
+}
+
+.score-category {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(44, 85, 48, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid #2c5530;
+}
+
+.score-category strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #2c5530;
+    font-size: 0.95rem;
+}
+
+.score-category ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.score-category li {
+    margin: 4px 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.score-category.penalty {
+    background: rgba(211, 47, 47, 0.1);
+    border-left-color: #d32f2f;
+}
+
+.score-category.penalty strong {
+    color: #d32f2f;
+}
+
+.level-system {
+    margin-top: 20px;
+    padding: 15px;
+    background: linear-gradient(135deg, rgba(44, 85, 48, 0.1), rgba(123, 168, 127, 0.1));
+    border-radius: 10px;
+    text-align: center;
+}
+
+.level-system strong {
+    display: block;
+    margin-bottom: 12px;
+    color: #2c5530;
+    font-size: 1rem;
+}
+
+.levels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.level {
+    padding: 4px 8px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.level.bronze {
+    background: linear-gradient(135deg, #cd7f32, #b8722c);
+    color: white;
+}
+
+.level.silver {
+    background: linear-gradient(135deg, #c0c0c0, #a8a8a8);
+    color: #333;
+}
+
+.level.gold {
+    background: linear-gradient(135deg, #ffd700, #e6c200);
+    color: #333;
+}
+
+.level.diamond {
+    background: linear-gradient(135deg, #b9f2ff, #87ceeb);
+    color: #333;
+}
+
+.level.king {
+    background: linear-gradient(135deg, #ffd700, #ff6b35);
+    color: white;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+/* 暗色主题适配 */
+.dark-theme .score-category {
+    background: rgba(123, 168, 127, 0.15);
+    border-left-color: #7ba87f;
+}
+
+.dark-theme .score-category strong {
+    color: #7ba87f;
+}
+
+.dark-theme .score-category.penalty {
+    background: rgba(255, 107, 107, 0.15);
+    border-left-color: #ff6b6b;
+}
+
+.dark-theme .score-category.penalty strong {
+    color: #ff6b6b;
+}
+
+.dark-theme .level-system {
+    background: linear-gradient(135deg, rgba(123, 168, 127, 0.15), rgba(168, 185, 169, 0.1));
+}
+
+.dark-theme .level-system strong {
+    color: #7ba87f;
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+    .levels {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .level {
+        width: fit-content;
+    }
+    
+    .score-category {
+        padding: 8px;
+    }
+    
+    .score-category li {
+        font-size: 0.8rem;
+    }
+}

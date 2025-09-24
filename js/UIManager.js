@@ -298,7 +298,15 @@ class UIManager {
         const letter = this.elements.letterInput.value.trim();
         const result = this.gameEngine.guessLetter(letter);
         
+        // 显示基本消息
         this.showMessage(result.message, result.type);
+        
+        // 显示积分奖励信息
+        if (result.success && result.bonusPoints > 0) {
+            setTimeout(() => {
+                this.showBonusMessage(result.bonusPoints, result.consecutiveHits);
+            }, 500);
+        }
         
         if (result.success && result.foundPositions) {
             this.highlightFoundCharacters(result.foundPositions);
@@ -308,7 +316,7 @@ class UIManager {
         this.updateDisplay();
         
         if (result.titleComplete || result.gameComplete) {
-            this.showWinMessage();
+            this.showWinMessage(result.scoreBreakdown);
         }
         
         // 只有在游戏未结束且已开始计时的情况下才启动计时器
@@ -377,7 +385,7 @@ class UIManager {
     /**
      * 显示胜利消息
      */
-    showWinMessage() {
+    showWinMessage(scoreBreakdown) {
         if (!this.elements.winMessage || !this.gameEngine.currentGame) return;
 
         this.stopTimer();
@@ -391,12 +399,31 @@ class UIManager {
         }
         
         const game = this.gameEngine.currentGame;
-        const score = this.gameEngine.calculateScore();
+        const scoreInfo = this.gameEngine.calculateScore();
+        const breakdown = scoreInfo.breakdown;
+        
+        // 计算准确率
+        const accuracy = this.gameEngine.guessCount > 0 ? 
+            Math.round((this.gameEngine.correctGuesses / this.gameEngine.guessCount) * 100) : 100;
+        
+        // 获取等级
+        const getScoreLevel = (score) => {
+            if (score >= 2000) return { level: '👑 王者', color: '#ffd700' };
+            if (score >= 1600) return { level: '💎 钻石', color: '#b9f2ff' };
+            if (score >= 1200) return { level: '🥇 黄金', color: '#ffd700' };
+            if (score >= 800) return { level: '🥈 白银', color: '#c0c0c0' };
+            return { level: '🥉 青铜', color: '#cd7f32' };
+        };
+        
+        const levelInfo = getScoreLevel(scoreInfo.total);
         
         this.elements.winMessage.innerHTML = `
             <div class="win-content">
                 <div class="win-emoji">🎉</div>
                 <div class="win-title">恭喜你猜对了！</div>
+                <div class="win-level" style="color: ${levelInfo.color}; font-size: 1.2rem; margin: 10px 0;">
+                    ${levelInfo.level}
+                </div>
                 <div class="win-details">
                     <div class="win-item">
                         <span class="win-label">作品：</span>
@@ -407,17 +434,34 @@ class UIManager {
                         <span class="win-value">${game.author} (${game.dynasty})</span>
                     </div>
                     <div class="win-item">
-                        <span class="win-label">猜测次数：</span>
-                        <span class="win-value">${this.gameEngine.guessCount} 次</span>
+                        <span class="win-label">总得分：</span>
+                        <span class="win-value win-score">${scoreInfo.total}</span>
                     </div>
                     <div class="win-item">
                         <span class="win-label">用时：</span>
                         <span class="win-value">${this.gameEngine.getFormattedTime()}</span>
                     </div>
                     <div class="win-item">
-                        <span class="win-label">得分：</span>
-                        <span class="win-value win-score">${score}</span>
+                        <span class="win-label">准确率：</span>
+                        <span class="win-value">${accuracy}%</span>
                     </div>
+                    ${this.gameEngine.maxConsecutiveHits >= 2 ? `
+                    <div class="win-item">
+                        <span class="win-label">最高连击：</span>
+                        <span class="win-value">🔥 ${this.gameEngine.maxConsecutiveHits}连击</span>
+                    </div>
+                    ` : ''}
+                </div>
+                <div class="score-breakdown">
+                    <h4>积分明细</h4>
+                    <div class="breakdown-item">基础分数: +${breakdown.base}</div>
+                    ${breakdown.characters > 0 ? `<div class="breakdown-item">字符得分: +${breakdown.characters}</div>` : ''}
+                    ${breakdown.combo > 0 ? `<div class="breakdown-item">连击奖励: +${breakdown.combo}</div>` : ''}
+                    ${breakdown.speed > 0 ? `<div class="breakdown-item">速度奖励: +${breakdown.speed}</div>` : ''}
+                    ${breakdown.accuracy > 0 ? `<div class="breakdown-item">准确度奖励: +${breakdown.accuracy}</div>` : ''}
+                    ${breakdown.strategy > 0 ? `<div class="breakdown-item">策略奖励: +${breakdown.strategy}</div>` : ''}
+                    ${breakdown.achievements > 0 ? `<div class="breakdown-item">成就奖励: +${breakdown.achievements}</div>` : ''}
+                    ${breakdown.penalties < 0 ? `<div class="breakdown-item penalty">惩罚: ${breakdown.penalties}</div>` : ''}
                 </div>
             </div>
         `;
@@ -683,6 +727,40 @@ class UIManager {
         // 聚焦输入框
         if (this.elements.letterInput) {
             this.elements.letterInput.focus();
+        }
+    }
+
+    /**
+     * 显示奖励消息
+     */
+    showBonusMessage(bonusPoints, consecutiveHits) {
+        if (!this.elements.message) return;
+
+        let bonusText = '';
+        if (consecutiveHits >= 2) {
+            bonusText = `🔥 ${consecutiveHits}连击！+${bonusPoints}分`;
+        } else if (bonusPoints > 0) {
+            bonusText = `✨ 奖励 +${bonusPoints}分`;
+        }
+
+        if (bonusText) {
+            this.elements.message.textContent = bonusText;
+            this.elements.message.className = 'message bonus';
+            this.elements.message.style.display = 'block';
+
+            // 添加特殊动画效果
+            this.elements.message.style.animation = 'none';
+            setTimeout(() => {
+                this.elements.message.style.animation = 'bounce 0.6s ease-in-out';
+            }, 10);
+
+            // 自动隐藏
+            setTimeout(() => {
+                if (this.elements.message) {
+                    this.elements.message.style.display = 'none';
+                    this.elements.message.style.animation = '';
+                }
+            }, 2000);
         }
     }
 }

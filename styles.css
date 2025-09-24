@@ -182,8 +182,50 @@ body {
 .game-subtitle {
     color: #666;
     font-size: 1.1rem;
-    margin: 0;
+    margin: 0 0 20px 0;
     opacity: 0.8;
+}
+
+/* 帮助按钮 */
+.help-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    margin-top: 10px;
+}
+
+.help-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+.help-button:active {
+    transform: translateY(0);
+}
+
+.help-icon {
+    font-size: 16px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.help-text {
+    font-weight: 600;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }
 
 @keyframes titleGlow {
@@ -887,74 +929,134 @@ body {
     border-color: var(--primary-color);
 }
 
-/* 游戏信息 */
-.game-info {
-    margin-top: 40px;
-    padding: 20px;
-    background: linear-gradient(145deg, #f8f9fb, #ffffff);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-light);
-}
-
-.game-info details {
-    cursor: pointer;
-}
-
-.game-info summary {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--secondary-color);
-    padding: 10px;
-    border-radius: 8px;
-    transition: var(--transition);
-    list-style: none;
-    position: relative;
-}
-
-.game-info summary::-webkit-details-marker {
-    display: none;
-}
-
-.game-info summary::before {
-    content: '▶';
-    position: absolute;
+/* 帮助浮窗 */
+.help-modal {
+    position: fixed;
+    top: 0;
     left: 0;
-    transition: transform 0.3s ease;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease-out;
 }
 
-.game-info details[open] summary::before {
-    transform: rotate(90deg);
+.help-modal.show {
+    display: flex;
 }
 
-.game-info summary:hover {
-    background: rgba(52, 152, 219, 0.1);
+.help-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
 }
 
-.info-content {
-    padding: 20px 10px 10px;
-    animation: slideDown 0.3s ease-out;
+.help-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
 }
 
-.info-content h4 {
+.help-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 30px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.help-modal-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.help-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.help-close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.help-modal-body {
+    padding: 30px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.help-section {
+    margin-bottom: 25px;
+}
+
+.help-section:last-child {
+    margin-bottom: 0;
+}
+
+.help-section h4 {
     color: var(--primary-color);
-    margin: 15px 0 10px;
-    font-size: 16px;
+    margin: 0 0 12px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
-.info-content ul {
-    margin: 10px 0;
+.help-section p {
+    margin: 0 0 15px 0;
+    color: #555;
+    line-height: 1.6;
+}
+
+.help-section ul {
+    margin: 0;
     padding-left: 20px;
 }
 
-.info-content li {
-    margin: 5px 0;
+.help-section li {
+    margin: 8px 0;
     color: #666;
     line-height: 1.5;
 }
 
-@keyframes slideDown {
-    0% { opacity: 0; transform: translateY(-10px); }
-    100% { opacity: 1; transform: translateY(0); }
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes slideUp {
+    0% { 
+        opacity: 0; 
+        transform: translateY(30px) scale(0.95); 
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
 }
 
 /* 彩带动画 */
@@ -1055,6 +1157,29 @@ body {
     
     .game-subtitle {
         font-size: 1rem;
+    }
+    
+    .help-button {
+        padding: 10px 16px;
+        font-size: 13px;
+        margin-top: 15px;
+    }
+    
+    .help-modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .help-modal-header {
+        padding: 20px 25px 15px;
+    }
+    
+    .help-modal-header h3 {
+        font-size: 1.3rem;
+    }
+    
+    .help-modal-body {
+        padding: 25px;
     }
     
     .text-display {
@@ -1161,6 +1286,29 @@ body {
     
     .game-header h1 {
         font-size: 1.8rem;
+    }
+    
+    .help-button {
+        padding: 8px 14px;
+        font-size: 12px;
+        margin-top: 12px;
+    }
+    
+    .help-modal-content {
+        width: 98%;
+        margin: 5px;
+    }
+    
+    .help-modal-header {
+        padding: 15px 20px 12px;
+    }
+    
+    .help-modal-header h3 {
+        font-size: 1.2rem;
+    }
+    
+    .help-modal-body {
+        padding: 20px;
     }
     
     .text-display {
@@ -1479,6 +1627,42 @@ body {
 
 .dark-theme .no-guesses {
     color: #666;
+}
+
+/* 暗色主题下的帮助按钮和浮窗 */
+.dark-theme .help-button {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+.dark-theme .help-button:hover {
+    background: linear-gradient(135deg, #2980b9, #1f5f99);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+}
+
+.dark-theme .help-modal-content {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+}
+
+.dark-theme .help-modal-header {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.dark-theme .help-modal-body {
+    color: var(--text-color);
+}
+
+.dark-theme .help-section h4 {
+    color: #3498db;
+}
+
+.dark-theme .help-section p {
+    color: #bbb;
+}
+
+.dark-theme .help-section li {
+    color: #aaa;
 }
 
 /* 动画增强 */

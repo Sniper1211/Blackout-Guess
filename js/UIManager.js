@@ -623,6 +623,50 @@ class UIManager {
     }
 
     /**
+     * 设置帮助浮窗
+     */
+    setupHelpModal() {
+        // 添加全局函数到 window 对象
+        window.showGameHelp = () => {
+            const helpModal = document.getElementById('helpModal');
+            if (helpModal) {
+                helpModal.classList.add('show');
+                helpModal.setAttribute('aria-hidden', 'false');
+                
+                // 聚焦到关闭按钮以便键盘导航
+                const closeBtn = helpModal.querySelector('.help-close-btn');
+                if (closeBtn) {
+                    setTimeout(() => closeBtn.focus(), 100);
+                }
+            }
+        };
+
+        window.closeGameHelp = () => {
+            const helpModal = document.getElementById('helpModal');
+            if (helpModal) {
+                helpModal.classList.remove('show');
+                helpModal.setAttribute('aria-hidden', 'true');
+                
+                // 返回焦点到帮助按钮
+                const helpButton = document.querySelector('.help-button');
+                if (helpButton) {
+                    helpButton.focus();
+                }
+            }
+        };
+
+        // ESC 键关闭浮窗
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const helpModal = document.getElementById('helpModal');
+                if (helpModal && helpModal.classList.contains('show')) {
+                    window.closeGameHelp();
+                }
+            }
+        });
+    }
+
+    /**
      * 初始化游戏
      */
     init() {
@@ -632,6 +676,9 @@ class UIManager {
         // 总是开始新游戏
         this.gameEngine.initGame();
         this.updateDisplay();
+        
+        // 设置帮助浮窗
+        this.setupHelpModal();
         
         // 聚焦输入框
         if (this.elements.letterInput) {

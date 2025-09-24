@@ -30,6 +30,10 @@
         <header class="game-header">
             <h1>古诗词猜字</h1>
             <p class="game-subtitle">通过猜测汉字，完成经典古诗词</p>
+            <button class="help-button" onclick="showGameHelp()" aria-label="查看游戏说明">
+                <span class="help-icon">❓</span>
+                <span class="help-text">游戏说明</span>
+            </button>
         </header>
         
         <div class="stats-container">
@@ -91,29 +95,40 @@
         
 
 
-        <div class="game-info">
-            <details>
-                <summary>游戏说明</summary>
-                <div class="info-content">
-                    <h4>🎯 游戏目标</h4>
-                    <p>通过猜测汉字来完成古诗词，当标题完全显示时游戏结束。</p>
-                    
-                    <h4>🎮 操作方式</h4>
-                    <ul>
-                        <li>在输入框中输入汉字，按回车或点击"猜测文字"按钮</li>
-                        <li>使用 Ctrl+R (Mac: Cmd+R) 快速重新开始</li>
-                        <li>使用 Ctrl+H (Mac: Cmd+H) 使用提示</li>
-                    </ul>
-                    
-                    <h4>📊 计分规则</h4>
-                    <ul>
-                        <li>基础分数：1000分</li>
-                        <li>时间扣分：每秒扣2分（最多扣500分）</li>
-                        <li>猜测扣分：每次猜测扣10分</li>
-                        <li>提示惩罚：使用提示扣100分</li>
-                    </ul>
+        <!-- 游戏说明浮窗 -->
+        <div class="help-modal" id="helpModal" role="dialog" aria-labelledby="helpTitle" aria-hidden="true">
+            <div class="help-modal-overlay" onclick="closeGameHelp()"></div>
+            <div class="help-modal-content">
+                <div class="help-modal-header">
+                    <h3 id="helpTitle">🎮 游戏说明</h3>
+                    <button class="help-close-btn" onclick="closeGameHelp()" aria-label="关闭说明">×</button>
                 </div>
-            </details>
+                <div class="help-modal-body">
+                    <div class="help-section">
+                        <h4>🎯 游戏目标</h4>
+                        <p>通过猜测汉字来完成古诗词，当标题完全显示时游戏结束。</p>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h4>🎮 操作方式</h4>
+                        <ul>
+                            <li>在输入框中输入汉字，按回车或点击"猜测文字"按钮</li>
+                            <li>使用 Ctrl+R (Mac: Cmd+R) 快速重新开始</li>
+                            <li>使用 Ctrl+H (Mac: Cmd+H) 使用提示</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h4>📊 计分规则</h4>
+                        <ul>
+                            <li>基础分数：1000分</li>
+                            <li>时间扣分：每秒扣2分（最多扣500分）</li>
+                            <li>猜测扣分：每次猜测扣10分</li>
+                            <li>提示惩罚：使用提示扣100分</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

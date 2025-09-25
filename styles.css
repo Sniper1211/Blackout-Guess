@@ -1713,17 +1713,21 @@ body {
     }
 }
 
-/* 焦点可见性 */
+/* 焦点可见性 - 移除按钮的outline，保留输入框的 */
 *:focus {
+    outline: none;
+}
+
+/* 只为输入框和选择框保留焦点样式，提升可访问性 */
+input:focus,
+select:focus {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
 
-button:focus,
-input:focus,
-select:focus {
-    outline: 3px solid var(--primary-color);
-    outline-offset: 2px;
+/* 按钮完全移除outline */
+button:focus {
+    outline: none;
 }
 
 /* 选择文本样式 */

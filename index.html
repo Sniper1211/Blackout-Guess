@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>猜字游戏</title>
     <meta name="description" content="一个有趣的古诗词猜字游戏，通过猜测汉字来完成经典诗词 - 简洁版">
     <meta name="keywords" content="古诗词,猜字游戏,中文,教育,娱乐">
@@ -30,10 +30,6 @@
         <header class="game-header">
             <h1>古诗词猜字</h1>
             <p class="game-subtitle">通过猜测汉字，完成经典古诗词</p>
-            <button class="help-button" onclick="showGameHelp()" aria-label="查看游戏说明">
-                <span class="help-icon">❓</span>
-                <span class="help-text">游戏说明</span>
-            </button>
         </header>
         
         <div class="stats-container">
@@ -66,22 +62,29 @@
                 >
                 <button id="guessButton" onclick="guessLetter()" class="guess-button primary" aria-label="提交猜测">
                     <span class="button-icon">✨</span>
-                    <span class="button-text">猜测文字</span>
-                </button>
-                <button class="action-button reset-button-mini" onclick="resetGame()" aria-label="重新开始游戏" title="重新开始">
-                    🔄
+                    <span class="button-text">猜测</span>
                 </button>
             </div>
-            <div class="secondary-actions">
-                <button id="hintButton" onclick="useHint()" class="action-button hint-button" aria-label="使用提示">
-                    <span class="button-icon">💡</span>
-                    <span class="button-text">获取提示</span>
-                </button>
-                <button class="action-button leaderboard-button" onclick="showHighScores()" aria-label="查看排行榜">
-                    <span class="button-icon">🏆</span>
-                    <span class="button-text">排行榜</span>
-                </button>
-            </div>
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <button class="sidebar-button" onclick="resetGame()" aria-label="重新开始游戏">
+                <span class="button-icon">🔄</span>
+                <span class="button-text">重新开始</span>
+            </button>
+            <button id="hintButton" onclick="useHint()" class="sidebar-button" aria-label="使用提示">
+                <span class="button-icon">💡</span>
+                <span class="button-text">获取提示</span>
+            </button>
+            <button class="sidebar-button" onclick="showHighScores()" aria-label="查看排行榜">
+                <span class="button-icon">🏆</span>
+                <span class="button-text">排行榜</span>
+            </button>
+            <button class="sidebar-button" onclick="showGameHelp()" aria-label="查看游戏说明">
+                <span class="button-icon">❓</span>
+                <span class="button-text">游戏说明</span>
+            </button>
         </div>
         
         <div class="message" id="message" role="status" aria-live="polite"></div>
@@ -186,6 +189,17 @@
     <div id="confettiContainer"></div>
 
     <!-- 脚本文件 -->
+    <!-- Supabase UMD 库（如需使用，确保下方配置赋值） -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        // Supabase 项目配置（生效）
+        window.SUPABASE_URL = 'https://bejoqvymupzhtmxjxqvb.supabase.co';
+        window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlam9xdnltdXB6aHRteGp4cXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NjY2MDEsImV4cCI6MjA3NzE0MjYwMX0.zM4iRiii069JHKZdZnmxtJIQP1Rapax-fpEwb-R5pVo';
+        try {
+            localStorage.setItem('SUPABASE_URL', window.SUPABASE_URL);
+            localStorage.setItem('SUPABASE_ANON_KEY', window.SUPABASE_ANON_KEY);
+        } catch {}
+    </script>
     <script src="js/GameEngine.js?v=2.0"></script>
     <script src="js/UIManager.js?v=2.0"></script>
     <script src="js/AudioManager.js?v=2.0"></script>

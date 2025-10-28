@@ -420,6 +420,7 @@ class UIManager {
         
         this.elements.winMessage.innerHTML = `
             <div class="win-content">
+                <button class="win-close-btn" aria-label="关闭" title="关闭">✖</button>
                 <div class="win-emoji">🎉</div>
                 <div class="win-title">恭喜你猜对了！</div>
                 <div class="win-level" style="color: ${levelInfo.color}; font-size: 1.2rem; margin: 10px 0;">
@@ -464,17 +465,49 @@ class UIManager {
                     ${breakdown.achievements > 0 ? `<div class="breakdown-item">成就奖励: +${breakdown.achievements}</div>` : ''}
                     ${breakdown.penalties < 0 ? `<div class="breakdown-item penalty">惩罚: ${breakdown.penalties}</div>` : ''}
                 </div>
+                <div class="win-actions" style="margin-top: 12px; display: flex; gap: 8px; justify-content: center;">
+                    <button class="win-highscores-btn" title="查看排行榜">🏆 查看排行榜</button>
+                </div>
             </div>
         `;
         
-        this.elements.winMessage.style.display = 'block';
+        this.elements.winMessage.classList.add('show');
         this.elements.winMessage.setAttribute('aria-live', 'assertive');
+
+        const closeBtn = this.elements.winMessage.querySelector('.win-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.closeWinMessage();
+            });
+        }
+
+        const hsBtn = this.elements.winMessage.querySelector('.win-highscores-btn');
+        if (hsBtn && window.showHighScores) {
+            hsBtn.addEventListener('click', () => {
+                window.showHighScores();
+            });
+        }
         
         // 保存最高分
         this.saveHighScore();
         
+        // 上报到 Supabase（如果可用）
+        if (window.app && typeof window.app.reportSession === 'function') {
+            try {
+                window.app.reportSession();
+            } catch (e) {
+                console.warn('报告成绩调用失败:', e);
+            }
+        }
+        
         // 添加庆祝动画
         this.addCelebrationAnimation();
+    }
+
+    closeWinMessage() {
+        if (this.elements.winMessage) {
+            this.elements.winMessage.classList.remove('show');
+        }
     }
 
     /**
@@ -558,7 +591,7 @@ class UIManager {
         this.gameEngine.initGame();
         
         if (this.elements.winMessage) {
-            this.elements.winMessage.style.display = 'none';
+            this.elements.winMessage.classList.remove('show');
         }
         
         if (this.elements.letterInput) {
@@ -641,16 +674,51 @@ class UIManager {
     /**
      * 显示最高分
      */
-    showHighScores() {
+    async showHighScores() {
         try {
+            // 优先从 Supabase 获取排行榜
+            let remote = null;
+            if (window.app && typeof window.app.fetchLeaderboard === 'function') {
+                try {
+                    remote = await window.app.fetchLeaderboard(10);
+                } catch {}
+            }
+
+            if (remote && remote.length) {
+                let message = '🏆 在线排行榜（Top 10） 🏆\n\n';
+                remote.forEach((row, index) => {
+                    const medal = index < 3 ? ['🥇', '🥈', '🥉'][index] : `${index + 1}.`;
+                    const date = row.created_at ? new Date(row.created_at).toLocaleDateString() : '';
+                    const title = row.poem_title || '未知作品';
+                    const time = typeof row.duration_seconds === 'number' ? `${Math.round(row.duration_seconds)}秒` : '—';
+                    const guesses = typeof row.guess_count === 'number' ? `${row.guess_count}次` : '—';
+                    message += `${medal} 《${title}》\n`;
+                    message += `   分数: ${row.score} | 猜测: ${guesses} | 用时: ${time}\n`;
+                    if (row.author || row.dynasty) {
+                        message += `   作者: ${row.author || ''} ${row.dynasty ? `(${row.dynasty})` : ''}\n`;
+                    }
+                    if (date) {
+                        message += `   日期: ${date}\n`;
+                    }
+                    message += '\n';
+                });
+                alert(message);
+                return;
+            }
+
+            // 如果在线排行榜为空，提示后可回退到本地
+            if (remote && Array.isArray(remote) && remote.length === 0) {
+                this.showMessage('在线排行榜暂无记录，先玩一局试试吧！', 'info');
+            }
+
+            // 回退到本地排行榜
             const highScores = JSON.parse(localStorage.getItem('highScores') || '[]');
-            
             if (highScores.length === 0) {
                 this.showMessage('暂无最高分记录', 'info');
                 return;
             }
-            
-            let message = '🏆 最高分排行榜 🏆\n\n';
+
+            let message = '🏆 本地最高分排行榜 🏆\n\n';
             highScores.forEach((score, index) => {
                 const date = new Date(score.date).toLocaleDateString();
                 const medal = index < 3 ? ['🥇', '🥈', '🥉'][index] : `${index + 1}.`;
@@ -659,7 +727,6 @@ class UIManager {
                 message += `   猜测: ${score.guessCount}次 | 用时: ${score.time}\n`;
                 message += `   日期: ${date}\n\n`;
             });
-            
             alert(message);
         } catch (error) {
             console.error('显示最高分失败:', error);
@@ -757,9 +824,14 @@ class UIManager {
 
             // 自动隐藏
             setTimeout(() => {
-                if (this.elements.message) {
-                    this.elements.message.style.display = 'none';
-                    this.elements.message.style.animation = '';
+                if (this.elements.message && this.elements.message.textContent === bonusText) {
+                    this.elements.message.style.opacity = '0';
+                    setTimeout(() => {
+                        this.elements.message.textContent = '';
+                        this.elements.message.className = 'message';
+                        this.elements.message.style.animation = '';
+                        this.elements.message.style.opacity = '1';
+                    }, 300);
                 }
             }, 2000);
         }

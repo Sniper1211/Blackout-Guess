@@ -786,8 +786,22 @@ class UIManager {
         localStorage.removeItem('gameState');
         
         // 总是开始新游戏
-        this.gameEngine.initGame();
+        const ok = this.gameEngine.initGame();
         this.updateDisplay();
+
+        // 无题库数据时禁用交互并提示
+        if (ok === false || !this.gameEngine.currentGame || !this.gameEngine.hiddenText || this.gameEngine.hiddenText.length === 0) {
+            if (this.elements.letterInput) {
+                this.elements.letterInput.disabled = true;
+            }
+            if (this.elements.guessButton) {
+                this.elements.guessButton.disabled = true;
+            }
+            if (this.elements.hintButton) {
+                this.elements.hintButton.disabled = true;
+            }
+            this.showMessage('题库为空，请检查在线题库或刷新重试', 'error');
+        }
         
         // 设置帮助浮窗
         this.setupHelpModal();

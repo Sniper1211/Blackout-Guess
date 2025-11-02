@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://sniper1211.github.io/Blackout-Guess/sitemap.xml

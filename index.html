@@ -2,13 +2,52 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>猜字游戏</title>
-    <meta name="description" content="一个有趣的古诗词猜字游戏，通过猜测汉字来完成经典诗词 - 简洁版">
-    <meta name="keywords" content="古诗词,猜字游戏,中文,教育,娱乐">
+    <!-- 允许缩放，提升移动端可访问性 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>古诗词猜字游戏 | 练汉字与诗词 | Blackout Guess</title>
+    <meta name="description" content="一个有趣的古诗词猜字游戏，通过猜汉字逐步揭示诗词原文，支持排行榜、提示与计分，适配移动端，练汉字与古诗词的记忆与理解。">
+    <meta name="keywords" content="古诗词, 猜字游戏, 汉字练习, 诗词学习, 教育, 娱乐">
+    <link rel="canonical" href="https://sniper1211.github.io/Blackout-Guess/">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="古诗词猜字游戏 | Blackout Guess">
+    <meta property="og:description" content="通过猜汉字逐步揭示诗词原文，支持排行榜与提示，练汉字与诗词理解。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://sniper1211.github.io/Blackout-Guess/">
+    <meta property="og:image" content="https://sniper1211.github.io/Blackout-Guess/favicon.svg">
+    <meta property="og:image:alt" content="古诗词猜字游戏预览图">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="古诗词猜字游戏 | Blackout Guess">
+    <meta name="twitter:description" content="通过猜汉字逐步揭示诗词原文，支持排行榜与提示，练汉字与诗词理解。">
+    <meta name="twitter:image" content="https://sniper1211.github.io/Blackout-Guess/favicon.svg">
+
     <link rel="stylesheet" href="styles.css?v=3.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- 结构化数据：游戏/应用 -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Game",
+      "name": "古诗词猜字游戏 | Blackout Guess",
+      "description": "通过猜汉字逐步揭示诗词原文，支持排行榜、提示与计分，适配移动端。",
+      "applicationCategory": "Game",
+      "operatingSystem": "Web",
+      "inLanguage": "zh-CN",
+      "url": "https://sniper1211.github.io/Blackout-Guess/",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CNY"
+      }
+    }
+    </script>
 </head>
 <body>
     <!-- 加载指示器 -->
@@ -26,10 +65,16 @@
         </div>
     </div>
     
-    <div class="game-container">
+    <main class="game-container">
         <header class="game-header">
             <h1>古诗词猜字</h1>
             <p class="game-subtitle">通过猜测汉字，完成经典古诗词</p>
+            <div id="dataSourceBadge" class="data-source-badge" aria-live="polite" title="题库来源">题库：检测中…</div>
+            <nav class="site-nav" aria-label="主要导航">
+                <a href="index.html" aria-label="返回首页" class="active">首页</a>
+                <a href="leaderboard.html" aria-label="查看排行榜">排行榜</a>
+                <a href="help.html" aria-label="查看游戏说明">游戏说明</a>
+            </nav>
         </header>
         
         <div class="stats-container">
@@ -44,6 +89,10 @@
             <div class="stats-item">
                 <div class="stats-label">得分</div>
                 <div class="stats-value" id="score">0</div>
+            </div>
+            <div class="stats-actions">
+                <button class="action-button soft-blue" onclick="resetGame()" aria-label="重新开始">重新开始</button>
+                <button id="hintButton" class="action-button hint-button" aria-label="使用提示">提示</button>
             </div>
         </div>
         
@@ -66,25 +115,7 @@
             </div>
         </div>
 
-        <!-- 侧边栏 -->
-        <div class="sidebar">
-            <button class="sidebar-button" onclick="resetGame()" aria-label="重新开始游戏">
-                <span class="button-icon">🔄</span>
-                <span class="button-text">重新开始</span>
-            </button>
-            <button id="hintButton" onclick="useHint()" class="sidebar-button" aria-label="使用提示">
-                <span class="button-icon">💡</span>
-                <span class="button-text">获取提示</span>
-            </button>
-            <button class="sidebar-button" onclick="showHighScores()" aria-label="查看排行榜">
-                <span class="button-icon">🏆</span>
-                <span class="button-text">排行榜</span>
-            </button>
-            <button class="sidebar-button" onclick="showGameHelp()" aria-label="查看游戏说明">
-                <span class="button-icon">❓</span>
-                <span class="button-text">游戏说明</span>
-            </button>
-        </div>
+        
         
         <div class="message" id="message" role="status" aria-live="polite"></div>
         
@@ -182,7 +213,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <!-- 彩带动画容器 -->
     <div id="confettiContainer"></div>

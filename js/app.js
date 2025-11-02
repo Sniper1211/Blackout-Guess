@@ -28,17 +28,7 @@ class App {
             // 绑定全局事件
             this.bindGlobalEvents();
 
-            // 初始化UI
-            this.uiManager.init();
-
-            // 初始化设备ID
-            try {
-                const existingId = localStorage.getItem('deviceId');
-                this.deviceId = existingId || (crypto && crypto.randomUUID ? crypto.randomUUID() : `dev-${Date.now()}`);
-                localStorage.setItem('deviceId', this.deviceId);
-            } catch {}
-
-            // 初始化 Supabase 客户端（可选）
+            // 初始化 Supabase 客户端（可选）需在加载题库前完成
             try {
                 if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
                     this.supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
@@ -50,15 +40,93 @@ class App {
                 console.warn('Supabase 初始化失败:', e);
             }
 
+            // 在初始化UI前尝试加载在线题库（若可用）
+            const loaded = await this.loadQuestionBank().catch(() => false);
+            // 初始化UI
+            this.uiManager.init();
+
+            // 初始化设备ID
+            try {
+                const existingId = localStorage.getItem('deviceId');
+                this.deviceId = existingId || (crypto && crypto.randomUUID ? crypto.randomUUID() : `dev-${Date.now()}`);
+                localStorage.setItem('deviceId', this.deviceId);
+            } catch {}
+
+            // （已提前）Supabase 初始化
+
             // 隐藏加载指示器
             this.hideLoadingIndicator();
 
             this.isInitialized = true;
             console.log('应用程序初始化完成');
 
+            // 更新数据来源徽标
+            try {
+                const badge = document.getElementById('dataSourceBadge');
+                if (badge) {
+                    const hasData = Array.isArray(this.gameEngine?.gameData) && this.gameEngine.gameData.length > 0;
+                    const sourceText = loaded ? '在线题库' : (hasData ? '内置题库' : '暂无数据');
+                    const sourceAttr = loaded ? 'remote' : (hasData ? 'local' : 'empty');
+                    badge.textContent = `题库：${sourceText}`;
+                    badge.setAttribute('data-source', sourceAttr);
+                }
+            } catch {}
+
         } catch (error) {
             console.error('应用程序初始化失败:', error);
             this.showError('应用程序初始化失败，请刷新页面重试');
+        }
+    }
+
+    /**
+     * 加载题库（从 Supabase），并映射到 GameEngine 的数据结构
+     * 保持对离线/无表场景的回退：若加载失败或为空，则使用内置题库
+     */
+    async loadQuestionBank(type = 'poem') {
+        try {
+            if (!this.supabase) return false;
+            // 读取启用的中文题目，按难度升序，限制最大条数以避免首屏过大
+            const { data, error } = await this.supabase
+                .from('question_bank')
+                .select('id,type,title,content,author,dynasty,enabled,language')
+                .eq('enabled', true)
+                .eq('language', 'zh-CN')
+                .order('difficulty', { ascending: true })
+                .limit(200);
+
+            if (error) {
+                console.warn('加载题库失败：', error.message);
+                return false;
+            }
+
+            const rows = Array.isArray(data) ? data : [];
+            // 仅使用与当前游戏类型匹配的题目（默认 poem）
+            const items = rows
+                .filter(r => (r.type || 'poem') === type)
+                .map(r => {
+                    // 兼容后端可能将正文存储为不含标题的内容：若 content 不含换行，则拼接标题
+                    const hasNewline = typeof r.content === 'string' && r.content.includes('\n');
+                    const content = hasNewline ? r.content : `${r.title}\n${r.content || ''}`;
+                    return {
+                        // GameEngine 期望的结构
+                        title: r.title || '未命名作品',
+                        content,
+                        author: r.author || '',
+                        dynasty: r.dynasty || ''
+                    };
+                });
+
+            if (items.length > 0) {
+                this.gameEngine.gameData = items;
+                console.log(`题库已加载：${items.length} 条（来自 Supabase）`);
+                return true;
+            } else {
+                console.log('在线题库为空，暂无题库数据');
+                return false;
+            }
+        } catch (e) {
+            console.warn('加载题库异常：', e);
+            return false;
         }
     }
 

@@ -4,6 +4,7 @@
  */
 class GameEngine {
     constructor() {
+        // 题库数据由外部（Supabase）提供
         this.gameData = [
             {
                 title: "静夜思",
@@ -127,6 +128,8 @@ class GameEngine {
                 dynasty: "宋代"
             }
         ];
+        // 移除内置数据：改为空数组，由 App 加载在线题库填充
+        this.gameData = [];
 
         this.reset();
     }
@@ -171,6 +174,13 @@ class GameEngine {
      */
     initGame() {
         this.reset();
+        
+        // 无题库数据时安全退出，避免报错
+        if (!Array.isArray(this.gameData) || this.gameData.length === 0) {
+            this.currentGame = null;
+            this.hiddenText = [];
+            return false;
+        }
         
         // 随机选择游戏内容
         this.currentGame = this.gameData[Math.floor(Math.random() * this.gameData.length)];

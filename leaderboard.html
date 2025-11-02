@@ -2,39 +2,40 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>最高分排行榜</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>排行榜 | 古诗词猜字游戏</title>
+  <meta name="description" content="古诗词猜字游戏排行榜，查看最高分与最佳连击记录。" />
+  <link rel="canonical" href="https://sniper1211.github.io/Blackout-Guess/leaderboard.html" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta property="og:title" content="排行榜 | 古诗词猜字游戏" />
+  <meta property="og:description" content="查看最高分与最佳连击记录，挑战更高分数。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sniper1211.github.io/Blackout-Guess/leaderboard.html" />
+  <meta property="og:image" content="https://sniper1211.github.io/Blackout-Guess/favicon.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    .lb-container { max-width: 1000px; margin: 24px auto; padding: 16px; background: var(--card-background); border: 1px solid var(--border-color); border-radius: var(--border-radius); box-shadow: var(--shadow-light); }
-    .lb-header { display: flex; justify-content: space-between; align-items: center; }
-    .lb-title { font-size: 1.5rem; font-weight: 600; color: var(--secondary-color); }
-    .lb-actions { display: flex; gap: 8px; }
-    .lb-actions button, .lb-actions a { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-background); color: var(--text-color); text-decoration: none; box-shadow: var(--shadow-light); transition: var(--transition); }
-    .lb-actions button:hover, .lb-actions a:hover { border-color: var(--primary-color); box-shadow: var(--shadow-medium); transform: translateY(-2px); }
-    .lb-table-wrapper { margin-top: 16px; overflow-x: auto; }
-    .lb-table { width: 100%; border-collapse: collapse; }
-    .lb-table th, .lb-table td { border-bottom: 1px solid var(--border-color); padding: 8px; text-align: left; color: var(--text-color); white-space: nowrap; }
-    .lb-empty { margin-top: 16px; color: #666; }
-    .lb-loading { margin-top: 16px; color: var(--text-color); }
-    .lb-error { margin-top: 16px; color: #c62828; }
-    .medal { width: 2rem; display: inline-block; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-  </style>
+  
 </head>
 <body>
-  <div class="lb-container">
-    <div class="lb-header">
-      <div class="lb-title">🏆 最高分排行榜</div>
-      <div class="lb-actions">
-        <button id="btnRefresh">刷新</button>
-        <a href="index.html" id="btnBack">返回游戏</a>
+  <nav class="site-nav" aria-label="主要导航">
+    <a href="index.html" aria-label="返回首页">首页</a>
+    <a href="leaderboard.html" aria-label="查看排行榜" class="active">排行榜</a>
+    <a href="help.html" aria-label="查看游戏说明">游戏说明</a>
+  </nav>
+  <main>
+  <div class="page-container">
+    <div class="page-header">
+      <div class="page-title">🏆 最高分排行榜</div>
+      <div class="page-actions">
+        <button id="btnRefresh" class="btn btn-outline">刷新</button>
+        <a href="index.html" id="btnBack" class="btn">返回游戏</a>
+        <a href="help.html" class="btn">游戏说明</a>
       </div>
     </div>
 
     <div id="lbStatus" class="lb-loading">正在加载排行榜…</div>
     <div class="lb-table-wrapper">
-      <table id="lbTable" class="lb-table" aria-live="polite" style="display:none">
+      <table id="lbTable" class="table lb-table" aria-live="polite" style="display:none">
         <thead>
           <tr>
             <th>排名</th>
@@ -52,6 +53,7 @@
     <div id="lbEmpty" class="lb-empty" style="display:none">暂无记录，先回到游戏玩一局试试吧！</div>
     <div id="lbError" class="lb-error" style="display:none"></div>
   </div>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>

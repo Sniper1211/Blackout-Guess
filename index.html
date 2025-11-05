@@ -70,6 +70,11 @@
             <h1>古诗词猜字</h1>
             <p class="game-subtitle">通过猜测汉字，完成经典古诗词</p>
             <div id="dataSourceBadge" class="data-source-badge" aria-live="polite" title="题库来源">题库：检测中…</div>
+            <div class="auth-controls" id="authControls" style="margin-top:8px; display:flex; gap:8px; align-items:center; justify-content:center;">
+                <span id="userBadge" class="mono">未登录</span>
+                <button id="btnLogin" class="btn" aria-label="使用 Google 登录">使用 Google 登录</button>
+                <button id="btnLogout" class="btn btn-outline" aria-label="退出登录" style="display:none">退出</button>
+            </div>
             <nav class="site-nav" aria-label="主要导航">
                 <a href="index.html" aria-label="返回首页" class="active">首页</a>
                 <a href="leaderboard.html" aria-label="查看排行榜">排行榜</a>

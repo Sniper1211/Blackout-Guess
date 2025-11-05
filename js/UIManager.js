@@ -31,7 +31,8 @@ class UIManager {
             themeToggle: document.getElementById('themeToggle'),
             hintButton: document.getElementById('hintButton'),
             guessButton: document.getElementById('guessButton'),
-            loadingIndicator: document.getElementById('loadingIndicator')
+            loadingIndicator: document.getElementById('loadingIndicator'),
+            usernameInput: document.getElementById('usernameInput')
         };
     }
 
@@ -129,6 +130,26 @@ class UIManager {
                 }
             }
         });
+
+        // 用户名输入保存到本地
+        if (this.elements.usernameInput) {
+            try {
+                const saved = localStorage.getItem('username') || '';
+                if (saved) this.elements.usernameInput.value = saved;
+            } catch {}
+
+            const saveName = (val) => {
+                const name = (val || '').trim().slice(0, 20);
+                try {
+                    localStorage.setItem('username', name);
+                    if (name) {
+                        this.showMessage('用户名已保存', 'success');
+                    }
+                } catch {}
+            };
+            this.elements.usernameInput.addEventListener('change', (e) => saveName(e.target.value));
+            this.elements.usernameInput.addEventListener('blur', (e) => saveName(e.target.value));
+        }
     }
 
     /**

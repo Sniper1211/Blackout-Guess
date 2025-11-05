@@ -39,6 +39,7 @@
         <thead>
           <tr>
             <th>排名</th>
+            <th>用户名</th>
             <th>作品</th>
             <th>分数</th>
             <th>猜测</th>
@@ -144,6 +145,7 @@
               const medal = index < 3 ? medals[index] : `${index + 1}`;
               tr.innerHTML = `
                 <td class="mono">${medal}</td>
+                <td class="mono">${(localStorage.getItem('username') || '—')}</td>
                 <td>《${score.title}》</td>
                 <td class="mono">${score.score}</td>
                 <td class="mono">${score.guessCount ?? '—'}</td>
@@ -173,6 +175,7 @@
           const medal = index < 3 ? medals[index] : `${index + 1}`;
           tr.innerHTML = `
             <td class="mono">${medal}</td>
+            <td class="mono">${row.username || '—'}</td>
             <td>《${row.poem_title || '未知作品'}》</td>
             <td class="mono">${row.score}</td>
             <td class="mono">${row.guess_count ?? '—'}</td>

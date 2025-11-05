@@ -10,6 +10,7 @@ class App {
         this.isInitialized = false;
         this.supabase = null;
         this.deviceId = null;
+        this.user = null;
     }
 
     /**
@@ -33,6 +34,8 @@ class App {
                 if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
                     this.supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
                     console.log('Supabase 已初始化');
+                    // 配置认证与登录按钮
+                    this.setupAuth();
                 } else {
                     console.log('未检测到 Supabase 配置，跳过初始化');
                 }
@@ -75,6 +78,81 @@ class App {
         } catch (error) {
             console.error('应用程序初始化失败:', error);
             this.showError('应用程序初始化失败，请刷新页面重试');
+        }
+    }
+
+    /**
+     * 设置认证与登录登出按钮
+     */
+    setupAuth() {
+        if (!this.supabase) return;
+
+        const btnLogin = document.getElementById('btnLogin');
+        const btnLogout = document.getElementById('btnLogout');
+        const userBadge = document.getElementById('userBadge');
+
+        const getDisplayName = (user) => {
+            try {
+                return (
+                    user?.user_metadata?.full_name ||
+                    user?.user_metadata?.name ||
+                    user?.email ||
+                    user?.phone ||
+                    user?.id ||
+                    '用户'
+                );
+            } catch { return '用户'; }
+        };
+
+        const updateUI = (user) => {
+            if (userBadge) {
+                userBadge.textContent = user ? `已登录：${getDisplayName(user)}` : '未登录';
+            }
+            if (btnLogin) btnLogin.style.display = user ? 'none' : 'inline-block';
+            if (btnLogout) btnLogout.style.display = user ? 'inline-block' : 'none';
+        };
+
+        // 初始用户状态
+        this.supabase.auth.getUser()
+            .then(({ data, error }) => {
+                if (!error) {
+                    this.user = data?.user || null;
+                    updateUI(this.user);
+                }
+            })
+            .catch(() => {});
+
+        // 监听状态变化
+        this.supabase.auth.onAuthStateChange((_event, session) => {
+            this.user = session?.user || null;
+            updateUI(this.user);
+        });
+
+        // 登录/登出事件
+        if (btnLogin) {
+            btnLogin.addEventListener('click', async () => {
+                try {
+                    await this.supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: { redirectTo: window.location.origin }
+                    });
+                } catch (e) {
+                    console.warn('发起登录失败:', e);
+                    this.showError('登录失败，请稍后重试');
+                }
+            });
+        }
+
+        if (btnLogout) {
+            btnLogout.addEventListener('click', async () => {
+                try {
+                    await this.supabase.auth.signOut();
+                    this.user = null;
+                    updateUI(null);
+                } catch (e) {
+                    console.warn('退出登录失败:', e);
+                }
+            });
         }
     }
 
@@ -138,6 +216,11 @@ class App {
             const accuracy = ge.guessCount > 0 ? Math.round((ge.correctGuesses / ge.guessCount) * 100) : 100;
             const payload = {
                 device_id: this.deviceId,
+                // 优先使用认证用户信息
+                user_id: this.user?.id || null,
+                username: (this.user ? (
+                    this.user.user_metadata?.full_name || this.user.user_metadata?.name || this.user.email || null
+                ) : (localStorage.getItem('username') || null)),
                 poem_title: g.title,
                 author: g.author,
                 dynasty: g.dynasty,

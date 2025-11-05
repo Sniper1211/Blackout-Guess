@@ -3,6 +3,44 @@
 -- 用法：复制到 Supabase SQL Editor，运行一次即可。
 -- 说明：脚本设计为幂等；每条 INSERT 都带有 NOT EXISTS 防重逻辑。
 
+-- 保证 question_bank 表包含前端查询所需列
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'question_bank' AND column_name = 'language'
+  ) THEN
+    ALTER TABLE public.question_bank ADD COLUMN language text DEFAULT 'zh-CN';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'question_bank' AND column_name = 'enabled'
+  ) THEN
+    ALTER TABLE public.question_bank ADD COLUMN enabled boolean DEFAULT true;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'question_bank' AND column_name = 'difficulty'
+  ) THEN
+    ALTER TABLE public.question_bank ADD COLUMN difficulty integer DEFAULT 1;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'question_bank' AND column_name = 'created_at'
+  ) THEN
+    ALTER TABLE public.question_bank ADD COLUMN created_at timestamptz DEFAULT now();
+  END IF;
+END $$;
+
+-- 启用 RLS 并允许匿名读取题库
+ALTER TABLE public.question_bank ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public read question bank" ON public.question_bank;
+CREATE POLICY "Public read question bank"
+  ON public.question_bank
+  FOR SELECT
+  TO public
+  USING (true);
+
 BEGIN;
 
 -- 静夜思（李白）

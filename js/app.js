@@ -132,9 +132,10 @@ class App {
         if (btnLogin) {
             btnLogin.addEventListener('click', async () => {
                 try {
+                    // 不显式传递 redirectTo，使用 Supabase 项目中配置的 Site URL
+                    // 避免线上路径与 index.html 变体不一致导致回调失败
                     await this.supabase.auth.signInWithOAuth({
-                        provider: 'google',
-                        options: { redirectTo: window.location.origin }
+                        provider: 'google'
                     });
                 } catch (e) {
                     console.warn('发起登录失败:', e);

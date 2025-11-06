@@ -112,6 +112,30 @@ class App {
             if (btnLogout) btnLogout.style.display = user ? 'inline-block' : 'none';
         };
 
+        // 处理 OAuth 回跳的哈希参数，确保解析会话并清理长哈希（避免误触发404页面）
+        try {
+            const hash = window.location.hash || '';
+            const hasAuthParams = /access_token|refresh_token|error|code/i.test(hash);
+            if (hasAuthParams) {
+                // 解析会话（supabase-js 会消费哈希并建立 session）
+                this.supabase.auth.getSession()
+                    .then(({ data, error }) => {
+                        if (!error) {
+                            this.user = data?.session?.user || null;
+                            updateUI(this.user);
+                        }
+                    })
+                    .finally(() => {
+                        // 清理 URL 中的哈希，避免后续刷新再次出现长哈希
+                        try {
+                            const url = new URL(window.location.href);
+                            url.hash = '';
+                            window.history.replaceState(null, document.title, url.toString());
+                        } catch {}
+                    });
+            }
+        } catch {}
+
         // 初始用户状态
         this.supabase.auth.getUser()
             .then(({ data, error }) => {

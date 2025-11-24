@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理员后台 | Blackout Guess</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <meta name="robots" content="noindex">
+</head>
+<body>
+  <nav class="site-nav" aria-label="主要导航">
+    <a href="index.html">首页</a>
+    <a href="leaderboard.html">排行榜</a>
+    <a href="help.html">说明</a>
+    <a href="admin.html" class="active">后台</a>
+  </nav>
+
+  <div class="page-container">
+    <div class="page-header">
+      <h1 class="page-title">管理员后台</h1>
+      <div class="page-actions">
+        <span id="adminUserBadge" class="mono">未登录</span>
+        <button id="adminBtnLogin" class="btn">使用 Google 登录</button>
+        <button id="adminBtnLogout" class="btn btn-outline" style="display:none">退出</button>
+      </div>
+    </div>
+
+    <div id="adminGate" class="message" style="margin-top:10px">请登录管理员账号以继续</div>
+
+    <section id="adminContent" style="display:none; margin-top:16px">
+      <h2>系统设置</h2>
+      <div class="form" style="display:flex; align-items:center; gap:12px; margin-bottom:16px">
+        <label style="display:flex; align-items:center; gap:6px">
+          <input type="checkbox" id="toggleDailyMode">
+          每日一题模式
+        </label>
+        <span id="dailyModeBadge" class="mono">当前：关闭</span>
+      </div>
+
+      <h2>创建/编辑题目</h2>
+      <form id="questionForm" class="form" style="display:grid; gap:8px; grid-template-columns:1fr 1fr;">
+        <label>标题
+          <input type="text" id="qTitle" placeholder="如：登鹳雀楼">
+        </label>
+        <label>作者
+          <input type="text" id="qAuthor" placeholder="如：王之涣">
+        </label>
+        <label>朝代
+          <input type="text" id="qDynasty" placeholder="如：唐">
+        </label>
+        <label>类型
+          <select id="qType">
+            <option value="poem">poem</option>
+            <option value="word">word</option>
+          </select>
+        </label>
+        <label>语言
+          <select id="qLang">
+            <option value="zh-CN" selected>zh-CN</option>
+            <option value="en">en</option>
+          </select>
+        </label>
+        <label>启用
+          <select id="qEnabled">
+            <option value="true" selected>true</option>
+            <option value="false">false</option>
+          </select>
+        </label>
+        <label style="grid-column:1 / -1">正文
+          <textarea id="qContent" rows="6" placeholder="第一行建议放标题，下一行开始正文"></textarea>
+        </label>
+
+        <label>状态
+          <select id="qStatus">
+            <option value="draft" selected>draft</option>
+            <option value="scheduled">scheduled</option>
+            <option value="published">published</option>
+          </select>
+        </label>
+        <label>发布日期
+          <input type="date" id="qPublishDate">
+        </label>
+
+        <div style="grid-column:1 / -1; display:flex; gap:8px;">
+          <button type="button" id="btnCreate" class="btn btn-primary">创建</button>
+          <button type="button" id="btnUpdate" class="btn">更新选中</button>
+        </div>
+      </form>
+
+      <h2 style="margin-top:16px">题目列表</h2>
+      <div class="lb-actions" style="margin-bottom:8px">
+        <button id="btnReload" class="btn">刷新</button>
+        <button id="btnShowAll" class="btn">显示全部</button>
+      </div>
+      <table id="questionTable" class="mono" style="width:100%; border-collapse:collapse">
+        <thead>
+          <tr>
+            <th style="text-align:left">ID</th>
+            <th style="text-align:left">标题</th>
+            <th>状态</th>
+            <th>发布日期</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+    // 尝试从 localStorage 复用 Supabase 配置
+    try {
+      window.SUPABASE_URL = localStorage.getItem('SUPABASE_URL') || window.SUPABASE_URL || '';
+      window.SUPABASE_ANON_KEY = localStorage.getItem('SUPABASE_ANON_KEY') || window.SUPABASE_ANON_KEY || '';
+    } catch {}
+    // 兜底：保证 admin.html 独立访问也能工作（与 index.html 保持一致）
+    if (!window.SUPABASE_URL) {
+      window.SUPABASE_URL = 'https://bejoqvymupzhtmxjxqvb.supabase.co';
+    }
+    if (!window.SUPABASE_ANON_KEY) {
+      window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlam9xdnltdXB6aHRteGp4cXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NjY2MDEsImV4cCI6MjA3NzE0MjYwMX0.zM4iRiii069JHKZdZnmxtJIQP1Rapax-fpEwb-R5pVo';
+    }
+    try {
+      localStorage.setItem('SUPABASE_URL', window.SUPABASE_URL);
+      localStorage.setItem('SUPABASE_ANON_KEY', window.SUPABASE_ANON_KEY);
+    } catch {}
+  </script>
+  <script src="js/admin.js"></script>
+
+  <!-- 可选：GA 初始化 -->
+  <script src="js/ga-config.js"></script>
+  <script src="js/analytics.js"></script>
+</body>
+</html>

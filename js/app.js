@@ -188,30 +188,71 @@ class App {
     async loadQuestionBank(type = 'poem') {
         try {
             if (!this.supabase) return false;
-            // 读取启用的中文题目，按难度升序，限制最大条数以避免首屏过大
-            const { data, error } = await this.supabase
-                .from('question_bank')
-                .select('id,type,title,content,author,dynasty,enabled,language')
-                .eq('enabled', true)
-                .eq('language', 'zh-CN')
-                .order('difficulty', { ascending: true })
-                .limit(200);
 
-            if (error) {
-                console.warn('加载题库失败：', error.message);
-                return false;
+            // 读取全局设置：是否启用“每日一题”模式
+            const dailyMode = await this.getDailyModeEnabled();
+
+            // 当每日模式开启：优先读取“今日已发布”的内容（每日一个）
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+
+            const selectFields = 'id,type,title,content,author,dynasty,enabled,language,status,publish_date,published_at';
+
+            let rows = [];
+            if (dailyMode) {
+                let { data, error } = await this.supabase
+                    .from('question_bank')
+                    .select(selectFields)
+                    .eq('status', 'published')
+                    .eq('publish_date', todayStr)
+                    .eq('language', 'zh-CN')
+                    .eq('enabled', true)
+                    .limit(10);
+                if (error) {
+                    console.warn('加载今日发布失败：', error.message);
+                }
+                rows = Array.isArray(data) ? data : [];
+            } else {
+                // 自由模式：直接读取启用的中文题目，忽略发布状态
+                const { data: freeData, error: freeErr } = await this.supabase
+                    .from('question_bank')
+                    .select('id,type,title,content,author,dynasty,enabled,language')
+                    .eq('enabled', true)
+                    .eq('language', 'zh-CN')
+                    .limit(100);
+                if (freeErr) {
+                    console.warn('加载自由模式题库失败：', freeErr.message);
+                }
+                rows = Array.isArray(freeData) ? freeData : [];
             }
+            // 回退逻辑（仅在每日模式时适用）：今天没有内容→取最近发布
+            if (dailyMode && rows.length === 0) {
+                const { data: latest, error: err2 } = await this.supabase
+                    .from('question_bank')
+                    .select(selectFields)
+                    .eq('status', 'published')
+                    .eq('language', 'zh-CN')
+                    .eq('enabled', true)
+                    .order('publish_date', { ascending: false, nullsLast: true })
+                    .order('published_at', { ascending: false, nullsLast: true })
+                    .limit(1);
+                if (err2) {
+                    console.warn('加载最近发布失败：', err2.message);
+                }
+                rows = Array.isArray(latest) ? latest : [];
+            }
+            // 自由模式下：若取到多条，前端随机取 1 条即可
 
-            const rows = Array.isArray(data) ? data : [];
             // 仅使用与当前游戏类型匹配的题目（默认 poem）
             const items = rows
                 .filter(r => (r.type || 'poem') === type)
                 .map(r => {
-                    // 兼容后端可能将正文存储为不含标题的内容：若 content 不含换行，则拼接标题
                     const hasNewline = typeof r.content === 'string' && r.content.includes('\n');
                     const content = hasNewline ? r.content : `${r.title}\n${r.content || ''}`;
                     return {
-                        // GameEngine 期望的结构
                         title: r.title || '未命名作品',
                         content,
                         author: r.author || '',
@@ -220,8 +261,14 @@ class App {
                 });
 
             if (items.length > 0) {
-                this.gameEngine.gameData = items;
-                console.log(`题库已加载：${items.length} 条（来自 Supabase）`);
+                if (dailyMode) {
+                    this.gameEngine.gameData = items.slice(0, 1);
+                    console.log(`题库已加载：${this.gameEngine.gameData.length} 条（每日模式）`);
+                } else {
+                    const pick = items[Math.floor(Math.random() * items.length)];
+                    this.gameEngine.gameData = [pick];
+                    console.log(`题库已加载：1 条（自由模式，随机选择）`);
+                }
                 return true;
             } else {
                 console.log('在线题库为空，暂无题库数据');
@@ -229,6 +276,26 @@ class App {
             }
         } catch (e) {
             console.warn('加载题库异常：', e);
+            return false;
+        }
+    }
+
+    async getDailyModeEnabled() {
+        try {
+            if (!this.supabase) return false;
+            const { data, error } = await this.supabase
+                .from('app_settings')
+                .select('daily_mode_enabled')
+                .eq('id', 'global')
+                .limit(1);
+            if (error) {
+                console.warn('读取每日模式设置失败：', error.message);
+                return false;
+            }
+            const row = Array.isArray(data) && data[0] ? data[0] : null;
+            return !!(row && row.daily_mode_enabled);
+        } catch (e) {
+            console.warn('读取每日模式设置异常：', e);
             return false;
         }
     }

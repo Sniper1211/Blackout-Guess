@@ -51,7 +51,13 @@
       .limit(1);
     if (!pErr && Array.isArray(pData) && pData[0]?.role === 'admin') {
       state.isAdmin = true;
-    } else {
+    } else if (pErr) {
+      // 若因 RLS 导致读取 user_profiles 失败（如未登录或无权），不应视为错误，而是继续尝试 fallback
+      console.warn('检查用户档案失败（可能尚未创建档案）：', pErr.message);
+    }
+
+    if (!state.isAdmin) {
+      // 回退：检查 admins 表（仅作为前端判定，写操作仍需 RLS 支持）
       const { data, error } = await state.supabase
         .from('admins')
         .select('id,auth_user_id,role,is_active')

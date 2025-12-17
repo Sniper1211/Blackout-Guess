@@ -124,9 +124,9 @@
 
     document.getElementById('adminBtnLogin')?.addEventListener('click', async () => {
       try {
-        // 显式指定回跳到后台页面，避免登录后落到首页
         const origin = window.location.origin;
-        const redirectTo = `${origin}/admin.html`;
+        const base = window.location.pathname.replace(/[^/]+$/, '');
+        const redirectTo = `${origin}${base}admin.html`;
         await state.supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
       } catch (e) {
         alert('登录失败，请稍后再试');

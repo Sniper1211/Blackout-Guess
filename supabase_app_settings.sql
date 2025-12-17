@@ -30,10 +30,7 @@ create policy app_settings_admin_insert for insert on public.app_settings
       select 1 from public.user_profiles p
       where p.user_id = auth.uid() and p.role = 'admin'
     )
-    or exists (
-      select 1 from public.admins a
-      where a.email = auth.jwt() ->> 'email'
-    )
+    or (auth.jwt() ->> 'user_role') = 'admin'
   );
 
 create policy app_settings_admin_update for update on public.app_settings
@@ -42,20 +39,14 @@ create policy app_settings_admin_update for update on public.app_settings
       select 1 from public.user_profiles p
       where p.user_id = auth.uid() and p.role = 'admin'
     )
-    or exists (
-      select 1 from public.admins a
-      where a.email = auth.jwt() ->> 'email'
-    )
+    or (auth.jwt() ->> 'user_role') = 'admin'
   )
   with check (
     exists (
       select 1 from public.user_profiles p
       where p.user_id = auth.uid() and p.role = 'admin'
     )
-    or exists (
-      select 1 from public.admins a
-      where a.email = auth.jwt() ->> 'email'
-    )
+    or (auth.jwt() ->> 'user_role') = 'admin'
   );
 
 -- 自动维护 updated_at/updated_by

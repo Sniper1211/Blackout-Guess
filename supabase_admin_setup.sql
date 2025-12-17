@@ -1,16 +1,24 @@
--- Supabase 管理员与 RLS、题库字段扩展
--- 使用前：请在 Supabase SQL 控制台执行，并将你的管理员邮箱插入 admins 表
+-- Supabase 管理员与 RLS、题库字段扩展（兼容新版 admins 架构与 JWT claims）
+-- 使用前：请在 Supabase SQL 控制台执行
 
--- 1) 管理员表：用于在 RLS 中判定管理权限
+-- 1) 管理员表：用于在 RLS 中判定管理权限（uuid 主键 + 关联 auth.users）
+create extension if not exists pgcrypto;
 create table if not exists public.admins (
-  email text primary key,
+  id uuid primary key default gen_random_uuid(),
+  auth_user_id uuid,
+  email text,
+  role text default 'admin',
+  is_active boolean default true,
   created_at timestamptz default now()
 );
+create index if not exists idx_admins_auth_user_id on public.admins(auth_user_id);
+create index if not exists idx_admins_role on public.admins(role);
+create index if not exists idx_admins_is_active on public.admins(is_active);
 
-comment on table public.admins is '站点管理员列表，通过 email 判定';
+comment on table public.admins is '站点管理员列表，通过 auth_user_id/role/is_active 判定';
 
--- 示例：插入你的管理员邮箱
--- insert into public.admins(email) values ('your-admin@example.com');
+-- 示例：插入管理员（请替换为实际用户的 UID 与邮箱）
+-- insert into public.admins(auth_user_id, email, role, is_active) values ('00000000-0000-0000-0000-000000000000', 'your-admin@example.com', 'admin', true);
 
 -- 2) question_bank 字段扩展：状态、排期与审计
 alter table public.question_bank
@@ -35,42 +43,57 @@ create policy "read-published-all" on public.question_bank
   for select
   using (status = 'published');
 
--- 5) 管理员可读取全部
+-- 5) 管理员可读取全部（基于 user_profiles.role 或 JWT claim user_role）
 drop policy if exists "read-all-admin" on public.question_bank;
 create policy "read-all-admin" on public.question_bank
   for select
   using (
-    (auth.jwt() ->> 'email') is not null
-    and (auth.jwt() ->> 'email') in (select email from public.admins)
+    exists (
+      select 1 from public.user_profiles up
+      where up.user_id = auth.uid() and up.role = 'admin'
+    )
+    or (auth.jwt() ->> 'user_role') = 'admin'
   );
 
--- 6) 仅管理员可写（插入/更新/删除）
+-- 6) 仅管理员可写（插入/更新/删除，基于 user_profiles.role 或 JWT claim）
 drop policy if exists "insert-admin" on public.question_bank;
 create policy "insert-admin" on public.question_bank
   for insert
   with check (
-    (auth.jwt() ->> 'email') is not null
-    and (auth.jwt() ->> 'email') in (select email from public.admins)
+    exists (
+      select 1 from public.user_profiles up
+      where up.user_id = auth.uid() and up.role = 'admin'
+    )
+    or (auth.jwt() ->> 'user_role') = 'admin'
   );
 
 drop policy if exists "update-admin" on public.question_bank;
 create policy "update-admin" on public.question_bank
   for update
   using (
-    (auth.jwt() ->> 'email') is not null
-    and (auth.jwt() ->> 'email') in (select email from public.admins)
+    exists (
+      select 1 from public.user_profiles up
+      where up.user_id = auth.uid() and up.role = 'admin'
+    )
+    or (auth.jwt() ->> 'user_role') = 'admin'
   )
   with check (
-    (auth.jwt() ->> 'email') is not null
-    and (auth.jwt() ->> 'email') in (select email from public.admins)
+    exists (
+      select 1 from public.user_profiles up
+      where up.user_id = auth.uid() and up.role = 'admin'
+    )
+    or (auth.jwt() ->> 'user_role') = 'admin'
   );
 
 drop policy if exists "delete-admin" on public.question_bank;
 create policy "delete-admin" on public.question_bank
   for delete
   using (
-    (auth.jwt() ->> 'email') is not null
-    and (auth.jwt() ->> 'email') in (select email from public.admins)
+    exists (
+      select 1 from public.user_profiles up
+      where up.user_id = auth.uid() and up.role = 'admin'
+    )
+    or (auth.jwt() ->> 'user_role') = 'admin'
   );
 
 -- 7) 触发器（可选）：写入 created_by/updated_by

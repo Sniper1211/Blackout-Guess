@@ -89,13 +89,48 @@
       </form>
 
       <h2 style="margin-top:16px">题目列表</h2>
-      <div class="lb-actions" style="margin-bottom:8px">
+      <div class="lb-actions" style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
         <button id="btnReload" class="btn">刷新</button>
         <button id="btnShowAll" class="btn">显示全部</button>
+        <span class="mono" id="bulkCount" style="margin-left:auto">已选中：0</span>
       </div>
+      <div class="form" style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+        <label style="display:flex; align-items:center; gap:6px">
+          <input type="checkbox" id="selectAllRows">
+          全选
+        </label>
+        <label style="display:flex; align-items:center; gap:6px">
+          批量发布日期
+          <input type="date" id="bulkPublishDate">
+        </label>
+        <button id="btnBulkSchedule" class="btn">批量排期</button>
+        <button id="btnBulkPublish" class="btn btn-primary">批量发布</button>
+      </div>
+
+      <h2 style="margin-top:8px">排期日历</h2>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+        <button id="calPrev" class="btn">上个月</button>
+        <span id="calLabel" class="mono">加载中…</span>
+        <button id="calNext" class="btn">下个月</button>
+        <span class="mono" style="margin-left:auto">筛选日期：<span id="dateFilterBadge">无</span></span>
+        <button id="btnClearDateFilter" class="btn btn-outline">清除筛选</button>
+      </div>
+      <div id="calendarGrid" class="mono" style="display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; user-select:none">
+        <!-- 周标题行 -->
+        <div style="opacity:0.7">日</div>
+        <div style="opacity:0.7">一</div>
+        <div style="opacity:0.7">二</div>
+        <div style="opacity:0.7">三</div>
+        <div style="opacity:0.7">四</div>
+        <div style="opacity:0.7">五</div>
+        <div style="opacity:0.7">六</div>
+        <!-- 日期格子将由脚本填充 -->
+      </div>
+
       <table id="questionTable" class="mono" style="width:100%; border-collapse:collapse">
         <thead>
           <tr>
+            <th style="width:36px"><input type="checkbox" id="selectAllHeader"></th>
             <th style="text-align:left">ID</th>
             <th style="text-align:left">标题</th>
             <th>状态</th>

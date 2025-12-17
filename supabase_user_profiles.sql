@@ -28,22 +28,22 @@ create policy "profiles-self-update" on public.user_profiles
 drop policy if exists "profiles-admin-select" on public.user_profiles;
 create policy "profiles-admin-select" on public.user_profiles
   for select using (
-    (auth.jwt() ->> 'email') in (select email from public.admins)
-    or exists (
+    exists (
       select 1 from public.user_profiles up
       where up.user_id = auth.uid() and up.role = 'admin'
     )
+    or (auth.jwt() ->> 'user_role') = 'admin'
   );
 
 -- 管理员可更新任意人的角色（可选）：
 drop policy if exists "profiles-admin-update" on public.user_profiles;
 create policy "profiles-admin-update" on public.user_profiles
   for update using (
-    (auth.jwt() ->> 'email') in (select email from public.admins)
-    or exists (
+    exists (
       select 1 from public.user_profiles up
       where up.user_id = auth.uid() and up.role = 'admin'
     )
+    or (auth.jwt() ->> 'user_role') = 'admin'
   );
 
 -- 触发器：更新 updated_at

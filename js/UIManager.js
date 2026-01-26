@@ -59,24 +59,24 @@ class UIManager {
             // 输入法结束
             this.elements.letterInput.addEventListener('compositionend', (e) => {
                 isComposing = false;
-                this.processInput(e.target);
+                // this.processInput(e.target);
             });
             
             // 输入事件处理
             this.elements.letterInput.addEventListener('input', (e) => {
                 if (!isComposing) {
-                    this.processInput(e.target);
+                    // this.processInput(e.target);
                 }
             });
 
             // 粘贴事件处理
             this.elements.letterInput.addEventListener('paste', (e) => {
-                e.preventDefault();
-                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-                const chineseChar = this.extractChineseChar(pastedText);
-                if (chineseChar) {
-                    e.target.value = chineseChar;
-                }
+                // e.preventDefault();
+                // const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                // const chineseChar = this.extractChineseChar(pastedText);
+                // if (chineseChar) {
+                //     e.target.value = chineseChar;
+                // }
             });
         }
 
@@ -173,13 +173,14 @@ class UIManager {
 
     /**
      * 更新游戏显示
+     * @param {Array} newlyGuessedIndices - 新猜出的字符索引数组
      */
-    updateDisplay() {
+    updateDisplay(newlyGuessedIndices = []) {
         if (this.isUpdating) return;
         this.isUpdating = true;
 
         try {
-            this.updateTextDisplay();
+            this.updateTextDisplay(newlyGuessedIndices);
             this.updateGuessedLetters();
             this.updateStats();
             this.updateHintButton();
@@ -190,8 +191,9 @@ class UIManager {
 
     /**
      * 更新文本显示区域
+     * @param {Array} newlyGuessedIndices - 新猜出的字符索引数组
      */
-    updateTextDisplay() {
+    updateTextDisplay(newlyGuessedIndices = []) {
         if (!this.elements.textDisplay || !this.gameEngine.hiddenText) return;
 
         // 使用DocumentFragment提高性能
@@ -210,13 +212,39 @@ class UIManager {
             const span = document.createElement('span');
             span.dataset.index = index;
             
+            // 判断是否为标点符号（非汉字、非字母、非数字）
+            const isPunctuation = /[^\u4e00-\u9fa5a-zA-Z0-9]/.test(item.char);
+
             if (item.hidden) {
                 span.className = 'hidden-char';
                 span.innerHTML = '&nbsp;'; // 使用HTML空格确保占位
                 span.setAttribute('aria-label', '隐藏字符');
             } else {
-                if (item.hasOwnProperty('guessedByUser')) {
-                    span.className = item.guessedByUser ? 'guessed-by-user' : 'revealed-by-system';
+                if (isPunctuation) {
+                    span.className = 'punctuation-char';
+                } else if (item.revealType) {
+                    // 根据 revealType 分配类名
+                    if (item.revealType === 'user') {
+                        span.className = 'guessed-by-user';
+                    } else if (item.revealType === 'hint') {
+                        span.className = 'revealed-by-hint';
+                    } else if (item.revealType === 'auto') {
+                        span.className = 'revealed-auto';
+                    } else {
+                        span.className = 'visible-char';
+                    }
+
+                    // 如果是新猜出的字，添加动画类
+                    if (newlyGuessedIndices.includes(index) && item.revealType === 'user') {
+                        span.classList.add('newly-guessed');
+                    }
+                } else if (item.hasOwnProperty('guessedByUser')) {
+                    // 兼容旧存档逻辑
+                    span.className = item.guessedByUser ? 'guessed-by-user' : 'revealed-auto';
+                    
+                    if (newlyGuessedIndices.includes(index) && item.guessedByUser) {
+                        span.classList.add('newly-guessed');
+                    }
                 } else {
                     span.className = 'visible-char';
                 }
@@ -268,11 +296,6 @@ class UIManager {
         if (this.elements.timer) {
             this.elements.timer.textContent = this.gameEngine.getFormattedTime();
         }
-        
-        if (this.elements.score) {
-            const scoreData = this.gameEngine.calculateScore();
-            this.elements.score.textContent = scoreData.total;
-        }
     }
 
     /**
@@ -318,24 +341,28 @@ class UIManager {
         }
         
         const letter = this.elements.letterInput.value.trim();
+        
+        // 校验输入长度
+        if (letter.length !== 1) {
+            this.showMessage('请输入一个汉字', 'error');
+            // 重新聚焦
+            this.elements.letterInput.focus();
+            return;
+        }
+
         const result = this.gameEngine.guessLetter(letter);
         
         // 显示基本消息
         this.showMessage(result.message, result.type);
         
-        // 显示积分奖励信息
-        if (result.success && result.bonusPoints > 0) {
-            setTimeout(() => {
-                this.showBonusMessage(result.bonusPoints, result.consecutiveHits);
-            }, 500);
-        }
+        // (已移除) 显示积分奖励信息
         
-        if (result.success && result.foundPositions) {
-            this.highlightFoundCharacters(result.foundPositions);
-        }
+        // if (result.success && result.foundPositions) {
+        //    this.highlightFoundCharacters(result.foundPositions);
+        // }
         
         this.elements.letterInput.value = '';
-        this.updateDisplay();
+        this.updateDisplay(result.success ? result.foundPositions : []);
         
         if (result.titleComplete || result.gameComplete) {
             this.showWinMessage(result.scoreBreakdown);
@@ -421,32 +448,13 @@ class UIManager {
         }
         
         const game = this.gameEngine.currentGame;
-        const scoreInfo = this.gameEngine.calculateScore();
-        const breakdown = scoreInfo.breakdown;
-        
-        // 计算准确率
-        const accuracy = this.gameEngine.guessCount > 0 ? 
-            Math.round((this.gameEngine.correctGuesses / this.gameEngine.guessCount) * 100) : 100;
-        
-        // 获取等级
-        const getScoreLevel = (score) => {
-            if (score >= 2000) return { level: '👑 王者', color: '#ffd700' };
-            if (score >= 1600) return { level: '💎 钻石', color: '#b9f2ff' };
-            if (score >= 1200) return { level: '🥇 黄金', color: '#ffd700' };
-            if (score >= 800) return { level: '🥈 白银', color: '#c0c0c0' };
-            return { level: '🥉 青铜', color: '#cd7f32' };
-        };
-        
-        const levelInfo = getScoreLevel(scoreInfo.total);
+        // (已移除) 积分计算与等级
         
         this.elements.winMessage.innerHTML = `
             <div class="win-content">
                 <button class="win-close-btn" aria-label="关闭" title="关闭">✖</button>
                 <div class="win-emoji">🎉</div>
                 <div class="win-title">恭喜你猜对了！</div>
-                <div class="win-level" style="color: ${levelInfo.color}; font-size: 1.2rem; margin: 10px 0;">
-                    ${levelInfo.level}
-                </div>
                 <div class="win-details">
                     <div class="win-item">
                         <span class="win-label">作品：</span>
@@ -457,16 +465,8 @@ class UIManager {
                         <span class="win-value">${game.author} (${game.dynasty})</span>
                     </div>
                     <div class="win-item">
-                        <span class="win-label">总得分：</span>
-                        <span class="win-value win-score">${scoreInfo.total}</span>
-                    </div>
-                    <div class="win-item">
                         <span class="win-label">用时：</span>
                         <span class="win-value">${this.gameEngine.getFormattedTime()}</span>
-                    </div>
-                    <div class="win-item">
-                        <span class="win-label">准确率：</span>
-                        <span class="win-value">${accuracy}%</span>
                     </div>
                     ${this.gameEngine.maxConsecutiveHits >= 2 ? `
                     <div class="win-item">
@@ -474,17 +474,6 @@ class UIManager {
                         <span class="win-value">🔥 ${this.gameEngine.maxConsecutiveHits}连击</span>
                     </div>
                     ` : ''}
-                </div>
-                <div class="score-breakdown">
-                    <h4>积分明细</h4>
-                    <div class="breakdown-item">基础分数: +${breakdown.base}</div>
-                    ${breakdown.characters > 0 ? `<div class="breakdown-item">字符得分: +${breakdown.characters}</div>` : ''}
-                    ${breakdown.combo > 0 ? `<div class="breakdown-item">连击奖励: +${breakdown.combo}</div>` : ''}
-                    ${breakdown.speed > 0 ? `<div class="breakdown-item">速度奖励: +${breakdown.speed}</div>` : ''}
-                    ${breakdown.accuracy > 0 ? `<div class="breakdown-item">准确度奖励: +${breakdown.accuracy}</div>` : ''}
-                    ${breakdown.strategy > 0 ? `<div class="breakdown-item">策略奖励: +${breakdown.strategy}</div>` : ''}
-                    ${breakdown.achievements > 0 ? `<div class="breakdown-item">成就奖励: +${breakdown.achievements}</div>` : ''}
-                    ${breakdown.penalties < 0 ? `<div class="breakdown-item penalty">惩罚: ${breakdown.penalties}</div>` : ''}
                 </div>
                 <div class="win-actions" style="margin-top: 12px; display: flex; gap: 8px; justify-content: center;">
                     <button class="win-highscores-btn" title="查看排行榜">🏆 查看排行榜</button>
@@ -509,7 +498,7 @@ class UIManager {
             });
         }
         
-        // 保存最高分
+        // 保存最高分 (仅保留基本记录逻辑，如果后端仍需score字段可传0)
         this.saveHighScore();
         
         // 上报到 Supabase（如果可用）

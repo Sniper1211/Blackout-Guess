@@ -188,9 +188,9 @@ class GameEngine {
         // 初始化隐藏文本
         this.hiddenText = this.currentGame.content.split('').map(char => {
             if (/[\u4e00-\u9fa5]/.test(char)) {
-                return { char: char, hidden: true };
+                return { char: char, hidden: true, revealType: null };
             } else {
-                return { char: char, hidden: false };
+                return { char: char, hidden: false, revealType: null };
             }
         });
     }
@@ -260,6 +260,7 @@ class GameEngine {
             if (item.hidden && item.char === letter) {
                 item.hidden = false;
                 item.guessedByUser = true;
+                item.revealType = 'user'; // 标记为用户猜测
                 found = true;
                 foundCount++;
                 foundPositions.push(index);
@@ -361,6 +362,7 @@ class GameEngine {
             if (item.hidden) {
                 item.hidden = false;
                 item.guessedByUser = false; // 系统显示的字
+                item.revealType = 'auto';   // 标记为自动揭示
             }
         });
     }
@@ -531,6 +533,7 @@ class GameEngine {
             if (item.hidden && item.char === hintChar.char) {
                 item.hidden = false;
                 item.guessedByUser = false; // 标记为系统提示
+                item.revealType = 'hint';   // 标记为提示揭示
             }
         });
 

@@ -91,10 +91,6 @@
                 <div class="stats-label">用时</div>
                 <div class="stats-value" id="timer">00:00</div>
             </div>
-            <div class="stats-item">
-                <div class="stats-label">得分</div>
-                <div class="stats-value" id="score">0</div>
-            </div>
             <div class="stats-actions">
                 <button class="action-button soft-blue" onclick="resetGame()" aria-label="重新开始">重新开始</button>
                 <button id="hintButton" class="action-button hint-button" aria-label="使用提示">提示</button>
@@ -130,94 +126,6 @@
         </div>
         
         <div class="win-message" id="winMessage" role="dialog" aria-label="游戏完成信息"></div>
-        
-
-
-        <!-- 游戏说明浮窗 -->
-        <div class="help-modal" id="helpModal" role="dialog" aria-labelledby="helpTitle" aria-hidden="true">
-            <div class="help-modal-overlay" onclick="closeGameHelp()"></div>
-            <div class="help-modal-content">
-                <div class="help-modal-header">
-                    <h3 id="helpTitle">🎮 游戏说明</h3>
-                    <button class="help-close-btn" onclick="closeGameHelp()" aria-label="关闭说明">×</button>
-                </div>
-                <div class="help-modal-body">
-                    <div class="help-section">
-                        <h4>🎯 游戏目标</h4>
-                        <p>通过猜测汉字来完成古诗词，当标题完全显示时游戏结束。</p>
-                    </div>
-                    
-                    <div class="help-section">
-                        <h4>🎮 操作方式</h4>
-                        <ul>
-                            <li>在输入框中输入汉字，按回车或点击"猜测文字"按钮</li>
-                            <li>使用 Ctrl+R (Mac: Cmd+R) 快速重新开始</li>
-                            <li>使用 Ctrl+H (Mac: Cmd+H) 使用提示</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="help-section">
-                        <h4>📊 计分规则</h4>
-                        <div class="scoring-details">
-                            <div class="score-category">
-                                <strong>🎯 基础得分</strong>
-                                <ul>
-                                    <li>保底分数：500分（不会被扣除）</li>
-                                    <li>常用字：+20分/字（的、了、在、是等）</li>
-                                    <li>一般字：+30分/字（大部分汉字）</li>
-                                    <li>生僻字：+50分/字（霜、鹳、蓑等）</li>
-                                </ul>
-                            </div>
-                            
-                            <div class="score-category">
-                                <strong>🔥 连击奖励</strong>
-                                <ul>
-                                    <li>2连击：+30分 | 3连击：+60分</li>
-                                    <li>4连击：+100分 | 5连击+：+150分</li>
-                                    <li>完美连击（零错误）：额外+300分</li>
-                                </ul>
-                            </div>
-                            
-                            <div class="score-category">
-                                <strong>⚡ 速度奖励</strong>
-                                <ul>
-                                    <li>30秒内：+200分 | 1分钟内：+150分</li>
-                                    <li>2分钟内：+100分 | 3分钟内：+50分</li>
-                                </ul>
-                            </div>
-                            
-                            <div class="score-category">
-                                <strong>🎖️ 其他奖励</strong>
-                                <ul>
-                                    <li>准确率90%+：+150分 | 80%+：+100分</li>
-                                    <li>不用提示：+200分 | 仅用1次：+100分</li>
-                                    <li>诗名全对：+100分</li>
-                                </ul>
-                            </div>
-                            
-                            <div class="score-category penalty">
-                                <strong>⚠️ 轻微惩罚</strong>
-                                <ul>
-                                    <li>使用提示：-30分/次</li>
-                                    <li>连续猜错3次：-20分</li>
-                                </ul>
-                            </div>
-                        </div>
-                        
-                        <div class="level-system">
-                            <strong>🏆 等级系统</strong>
-                            <div class="levels">
-                                <span class="level bronze">🥉 青铜 500-799</span>
-                                <span class="level silver">🥈 白银 800-1199</span>
-                                <span class="level gold">🥇 黄金 1200-1599</span>
-                                <span class="level diamond">💎 钻石 1600-1999</span>
-                                <span class="level king">👑 王者 2000+</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </main>
 
     <!-- 彩带动画容器 -->

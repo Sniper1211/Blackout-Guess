@@ -413,17 +413,9 @@ class App {
 
     /**
      * 防止页面滚动和误触
+     * (已移除阻止滚动的逻辑，以修复页面无法下拉的问题)
      */
     preventScrollAndTouch() {
-        // 防止页面滚动
-        document.addEventListener('touchmove', (e) => {
-            // 只允许在文本显示区域内滚动（如果内容超出）
-            const textDisplay = document.getElementById('textDisplay');
-            if (!textDisplay || !textDisplay.contains(e.target)) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-
         // 防止双击缩放
         document.addEventListener('touchstart', (e) => {
             if (e.touches.length > 1) {
@@ -446,30 +438,10 @@ class App {
             e.preventDefault();
         });
 
-        // 防止右键菜单（移动端长按）
-        document.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-        });
-
-        // 防止选择文本（除了输入框）
-        document.addEventListener('selectstart', (e) => {
-            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-                e.preventDefault();
-            }
-        });
-
-        // 防止键盘弹出时的页面滚动
+        // 防止键盘弹出时的页面滚动（仅微调）
         window.addEventListener('resize', () => {
-            // 延迟执行，确保键盘动画完成
-            setTimeout(() => {
-                window.scrollTo(0, 0);
-            }, 100);
+            // 保持当前视口位置，而不是强制回顶
         });
-
-        // 确保页面始终在顶部
-        window.addEventListener('scroll', () => {
-            window.scrollTo(0, 0);
-        }, { passive: false });
     }
 
     /**

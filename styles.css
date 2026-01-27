@@ -445,6 +445,14 @@ input, textarea {
     background: rgba(64, 115, 158, 0.05);
 }
 
+.calendar-button {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1;
+}
+
 /* 重新开始按钮（Soft Blue 兼容） */
 .soft-blue {
     /* 保持透明背景，依靠 hover 效果 */

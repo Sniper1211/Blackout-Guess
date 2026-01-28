@@ -519,6 +519,10 @@ class GameEngine {
             return { success: false, message: '游戏已结束' };
         }
 
+        if (this.hintUsed) {
+            return { success: false, message: '提示次数已用完' };
+        }
+
         const hiddenChars = this.hiddenText.filter(item => item.hidden);
         if (hiddenChars.length === 0) {
             return { success: false, message: '没有需要提示的字符' };

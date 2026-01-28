@@ -11,6 +11,10 @@ class App {
         this.supabase = null;
         this.deviceId = null;
         this.user = null;
+        
+        // 缓存相关
+        this.questionsMap = {}; // 存储所有已获取的题目，Key: publish_date (YYYY-MM-DD)
+        this.loadedMonths = new Set(); // 存储已加载的月份，Key: YYYY-MM
     }
 
     /**
@@ -156,10 +160,16 @@ class App {
         if (btnLogin) {
             btnLogin.addEventListener('click', async () => {
                 try {
-                    // 不显式传递 redirectTo，使用 Supabase 项目中配置的 Site URL
-                    // 避免线上路径与 index.html 变体不一致导致回调失败
+                    // 动态获取当前页面的完整 URL 作为重定向地址
+                    // 确保在本地测试时跳回 localhost，在线测试时跳回线上地址
+                    const redirectTo = window.location.origin + window.location.pathname;
+                    console.log('发起登录，重定向至:', redirectTo);
+                    
                     await this.supabase.auth.signInWithOAuth({
-                        provider: 'google'
+                        provider: 'google',
+                        options: {
+                            redirectTo: redirectTo
+                        }
                     });
                 } catch (e) {
                     console.warn('发起登录失败:', e);
@@ -280,6 +290,156 @@ class App {
         }
     }
 
+    /**
+     * 获取过往题目列表
+     */
+    /**
+     * 获取指定月份的过往题目（带缓存）
+     * @param {number} year 年份
+     * @param {number} month 月份 (0-11)
+     */
+    async fetchMonthQuestions(year, month) {
+        const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+        
+        // 如果已经加载过该月，直接返回
+        if (this.loadedMonths.has(monthKey)) {
+            return;
+        }
+
+        try {
+            if (!this.supabase) return;
+
+            // 计算当月起止日期
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            
+            const formatDate = (date) => {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            };
+
+            const startStr = formatDate(firstDay);
+            const endStr = formatDate(lastDay);
+
+            const { data, error } = await this.supabase
+                .from('question_bank')
+                .select('id, title, author, dynasty, publish_date')
+                .eq('status', 'published')
+                .eq('language', 'zh-CN')
+                .eq('enabled', true)
+                .gte('publish_date', startStr)
+                .lte('publish_date', endStr);
+
+            if (error) {
+                console.warn(`获取 ${monthKey} 题目失败：`, error.message);
+                return;
+            }
+
+            // 更新缓存
+            if (data && data.length > 0) {
+                data.forEach(q => {
+                    if (q.publish_date) {
+                        // 确保只取日期部分 (YYYY-MM-DD)
+                        const dateKey = q.publish_date.split('T')[0];
+                        this.questionsMap[dateKey] = q;
+                    }
+                });
+            }
+
+            // 标记该月已加载
+            this.loadedMonths.add(monthKey);
+            
+        } catch (e) {
+            console.warn(`获取 ${monthKey} 题目异常：`, e);
+        }
+    }
+
+    /**
+     * 获取过往题目（已废弃，保留兼容性）
+     */
+    async fetchPastQuestions() {
+        try {
+            if (!this.supabase) return [];
+
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+
+            const { data, error } = await this.supabase
+                .from('question_bank')
+                .select('id, title, author, dynasty, publish_date')
+                .eq('status', 'published')
+                .eq('language', 'zh-CN')
+                .eq('enabled', true)
+                .lte('publish_date', todayStr)
+                .order('publish_date', { ascending: false })
+                .limit(50);
+
+            if (error) {
+                console.warn('获取过往题目失败：', error.message);
+                return [];
+            }
+
+            return data || [];
+        } catch (e) {
+            console.warn('获取过往题目异常：', e);
+            return [];
+        }
+    }
+
+    /**
+     * 加载特定题目
+     */
+    async loadSpecificQuestion(id) {
+         try {
+            if (!this.supabase) return false;
+            
+            this.showLoadingIndicator();
+
+            const { data, error } = await this.supabase
+                .from('question_bank')
+                .select('id, type, title, content, author, dynasty, enabled, language')
+                .eq('id', id)
+                .single();
+
+            if (error) {
+                console.warn('加载特定题目失败：', error.message);
+                this.hideLoadingIndicator();
+                return false;
+            }
+
+            if (data) {
+                const hasNewline = typeof data.content === 'string' && data.content.includes('\n');
+                const content = hasNewline ? data.content : `${data.title}\n${data.content || ''}`;
+                
+                const gameData = [{
+                    title: data.title || '未命名作品',
+                    content,
+                    author: data.author || '',
+                    dynasty: data.dynasty || ''
+                }];
+                
+                this.gameEngine.gameData = gameData;
+                this.gameEngine.initGame();
+                this.uiManager.updateDisplay();
+                this.uiManager.showMessage('题目已加载', 'success');
+                this.hideLoadingIndicator();
+                return true;
+            }
+            
+            this.hideLoadingIndicator();
+            return false;
+        } catch (e) {
+            console.warn('加载特定题目异常：', e);
+            this.hideLoadingIndicator();
+            return false;
+        }
+    }
+
     async getDailyModeEnabled() {
         try {
             if (!this.supabase) return false;
@@ -347,23 +507,7 @@ class App {
     }
 
     async fetchLeaderboard(limit = 10) {
-        try {
-            if (!this.supabase) return null;
-            const { data, error } = await this.supabase
-                .from('game_sessions')
-                .select('*')
-                .order('score', { ascending: false })
-                .order('created_at', { ascending: false })
-                .limit(limit);
-            if (error) {
-                console.warn('获取排行榜失败:', error.message);
-                return null;
-            }
-            return data || null;
-        } catch (e) {
-            console.warn('获取排行榜异常:', e);
-            return null;
-        }
+        return null;
     }
 
     /**
@@ -519,9 +663,9 @@ class App {
      */
     showHighScores() {
         if (!this.isInitialized) return;
-        try {
-            window.open('leaderboard.html', '_blank');
-        } catch {}
+        if (this.uiManager) {
+            this.uiManager.showMessage('排行榜暂不可用', 'info');
+        }
         this.audioManager.playClick();
     }
 

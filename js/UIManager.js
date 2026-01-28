@@ -32,8 +32,19 @@ class UIManager {
             hintButton: document.getElementById('hintButton'),
             guessButton: document.getElementById('guessButton'),
             loadingIndicator: document.getElementById('loadingIndicator'),
-            usernameInput: document.getElementById('usernameInput')
+            usernameInput: document.getElementById('usernameInput'),
+
+            calendarButton: document.getElementById('calendarButton'),
+            historyModal: document.getElementById('historyModal'),
+            closeHistoryBtn: document.getElementById('closeHistoryBtn'),
+            historyList: document.getElementById('historyList'),
+            calendarGrid: document.getElementById('calendarGrid'),
+            yearSelect: document.getElementById('yearSelect'),
+            monthSelect: document.getElementById('monthSelect')
         };
+        
+        // 用于日历的状态
+        this.currentCalendarDate = new Date();
     }
 
     /**
@@ -117,16 +128,15 @@ class UIManager {
 
         // 键盘快捷键
         document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                switch (e.key) {
-                    case 'r':
-                        e.preventDefault();
-                        this.resetGame();
-                        break;
-                    case 'h':
-                        e.preventDefault();
-                        this.useHint();
-                        break;
+            // 提示快捷键: Ctrl/Cmd + H
+            if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+                e.preventDefault();
+                // 必须限制次数：未获胜且未使用过提示
+                if (!this.gameEngine.gameWon && !this.gameEngine.hintUsed) {
+                    console.log('触发快捷键提示');
+                    this.useHint();
+                } else if (this.gameEngine.hintUsed) {
+                    this.showMessage('提示次数已用完', 'error');
                 }
             }
         });
@@ -149,6 +159,43 @@ class UIManager {
             };
             this.elements.usernameInput.addEventListener('change', (e) => saveName(e.target.value));
             this.elements.usernameInput.addEventListener('blur', (e) => saveName(e.target.value));
+        }
+
+        // 历史题目弹窗
+        if (this.elements.calendarButton) {
+            this.elements.calendarButton.addEventListener('click', () => {
+                this.openHistoryModal();
+            });
+        }
+
+        if (this.elements.closeHistoryBtn) {
+            this.elements.closeHistoryBtn.addEventListener('click', () => {
+                this.closeHistoryModal();
+            });
+        }
+
+        // 点击遮罩关闭弹窗
+        if (this.elements.historyModal) {
+            this.elements.historyModal.addEventListener('click', (e) => {
+                if (e.target === this.elements.historyModal) {
+                    this.closeHistoryModal();
+                }
+            });
+        }
+
+        // 日历翻页/选择
+        if (this.elements.yearSelect) {
+            this.elements.yearSelect.addEventListener('change', (e) => {
+                this.currentCalendarDate.setFullYear(parseInt(e.target.value));
+                this.renderHistoryCalendar();
+            });
+        }
+
+        if (this.elements.monthSelect) {
+            this.elements.monthSelect.addEventListener('change', (e) => {
+                this.currentCalendarDate.setMonth(parseInt(e.target.value));
+                this.renderHistoryCalendar();
+            });
         }
     }
 
@@ -475,9 +522,6 @@ class UIManager {
                     </div>
                     ` : ''}
                 </div>
-                <div class="win-actions" style="margin-top: 12px; display: flex; gap: 8px; justify-content: center;">
-                    <button class="win-highscores-btn" title="查看排行榜">🏆 查看排行榜</button>
-                </div>
             </div>
         `;
         
@@ -491,25 +535,6 @@ class UIManager {
             });
         }
 
-        const hsBtn = this.elements.winMessage.querySelector('.win-highscores-btn');
-        if (hsBtn && window.showHighScores) {
-            hsBtn.addEventListener('click', () => {
-                window.showHighScores();
-            });
-        }
-        
-        // 保存最高分 (仅保留基本记录逻辑，如果后端仍需score字段可传0)
-        this.saveHighScore();
-        
-        // 上报到 Supabase（如果可用）
-        if (window.app && typeof window.app.reportSession === 'function') {
-            try {
-                window.app.reportSession();
-            } catch (e) {
-                console.warn('报告成绩调用失败:', e);
-            }
-        }
-        
         // 添加庆祝动画
         this.addCelebrationAnimation();
     }
@@ -562,6 +587,219 @@ class UIManager {
         }
     }
 
+
+    /**
+     * 打开历史题目弹窗
+     */
+    async openHistoryModal() {
+        if (!this.elements.historyModal) return;
+        
+        this.elements.historyModal.classList.add('show');
+        this.currentCalendarDate = new Date(); // 每次打开重置到当前月
+        this.initCalendarSelectors();
+        this.renderHistoryCalendar();
+    }
+
+    /**
+     * 初始化日历选择框
+     */
+    initCalendarSelectors() {
+        if (!this.elements.yearSelect || !this.elements.monthSelect) return;
+
+        const currentYear = new Date().getFullYear();
+        const startYear = currentYear - 5;
+        const endYear = currentYear + 1;
+
+        // 初始化年份
+        this.elements.yearSelect.innerHTML = '';
+        for (let y = startYear; y <= endYear; y++) {
+            const option = document.createElement('option');
+            option.value = y;
+            option.textContent = `${y}年`;
+            if (y === this.currentCalendarDate.getFullYear()) option.selected = true;
+            this.elements.yearSelect.appendChild(option);
+        }
+
+        // 初始化月份
+        this.elements.monthSelect.innerHTML = '';
+        for (let m = 0; m < 12; m++) {
+            const option = document.createElement('option');
+            option.value = m;
+            option.textContent = `${m + 1}月`;
+            if (m === this.currentCalendarDate.getMonth()) option.selected = true;
+            this.elements.monthSelect.appendChild(option);
+        }
+    }
+
+    /**
+     * 关闭历史题目弹窗
+     */
+    closeHistoryModal() {
+        if (this.elements.historyModal) {
+            this.elements.historyModal.classList.remove('show');
+        }
+    }
+
+    /**
+     * 渲染历史题目日历
+     */
+    async renderHistoryCalendar() {
+        if (!this.elements.calendarGrid) return;
+
+        const year = this.currentCalendarDate.getFullYear();
+        const month = this.currentCalendarDate.getMonth();
+
+        // 同步选择框
+        if (this.elements.yearSelect) this.elements.yearSelect.value = year;
+        if (this.elements.monthSelect) this.elements.monthSelect.value = month;
+
+        // 显示加载状态（如果数据未缓存，用户会看到短暂loading，否则瞬间渲染）
+        // 这里不强制清空innerHTML，以避免闪烁，仅在无数据时显示loading
+        if (!window.app) return;
+        
+        // 计算需要的月份数据（当前月，可能还有上月和下月）
+        // 简单起见，我们加载当前月、上个月和下个月，确保网格首尾的日期都有数据
+        const promises = [
+            window.app.fetchMonthQuestions(year, month),
+            window.app.fetchMonthQuestions(year, month - 1), // 上个月 (JS会自动处理年份变化)
+            window.app.fetchMonthQuestions(year, month + 1)  // 下个月
+        ];
+
+        // 只有当第一次加载（缓存为空）时才显示loading
+        const currentMonthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+        if (window.app.loadedMonths && !window.app.loadedMonths.has(currentMonthKey)) {
+             this.elements.calendarGrid.innerHTML = '<div class="loading-spinner" style="grid-column: span 7; margin: 20px auto;"></div>';
+        }
+
+        await Promise.all(promises);
+        
+        const questionMap = window.app.questionsMap || {};
+
+        this.elements.calendarGrid.innerHTML = '';
+
+        // 添加星期表头 (一 二 三 四 五 六 日)
+        const dayLabels = ['一', '二', '三', '四', '五', '六', '日'];
+        dayLabels.forEach(label => {
+            const el = document.createElement('div');
+            el.className = 'calendar-day-label';
+            el.textContent = label;
+            this.elements.calendarGrid.appendChild(el);
+        });
+
+        // 计算日历开始日期 (本月第一天所在的周一)
+        const firstDayOfMonth = new Date(year, month, 1);
+        let startDayOffset = firstDayOfMonth.getDay(); // 0 是周日
+        startDayOffset = (startDayOffset === 0 ? 7 : startDayOffset) - 1; // 转换为周一为 0
+
+        const startDate = new Date(year, month, 1 - startDayOffset);
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+        // 始终渲染 42 个格子 (6 行)
+        for (let i = 0; i < 42; i++) {
+            const currentLoopDate = new Date(startDate);
+            currentLoopDate.setDate(startDate.getDate() + i);
+
+            const dYear = currentLoopDate.getFullYear();
+            const dMonth = currentLoopDate.getMonth();
+            const dDay = currentLoopDate.getDate();
+            const dateStr = `${dYear}-${String(dMonth + 1).padStart(2, '0')}-${String(dDay).padStart(2, '0')}`;
+            
+            const isCurrentMonth = dMonth === month && dYear === year;
+            const isToday = dateStr === todayStr;
+            const question = questionMap[dateStr];
+            
+            // Debug: 检查昨天的匹配情况
+            if (dateStr === '2026-01-27') {
+                console.log('Rendering 2026-01-27', { question, dateStr, mapKeys: Object.keys(questionMap) });
+            }
+
+            const el = document.createElement('div');
+            el.className = 'calendar-date';
+            if (isCurrentMonth) el.classList.add('current-month');
+            else el.classList.add('other-month');
+            
+            if (isToday) el.classList.add('today');
+            if (question) el.classList.add('has-question');
+
+            el.innerHTML = `<span class="date-num">${dDay}</span>`;
+
+            if (question) {
+                const marker = document.createElement('div');
+                marker.className = 'question-marker';
+                el.appendChild(marker);
+                
+                el.title = `${question.title} - ${question.author}`;
+                // 优先绑定有题目的点击事件
+                el.addEventListener('click', async (e) => {
+                    e.stopPropagation(); // 防止冒泡
+                    console.log(`点击日期: ${dateStr}, 题目ID: ${question.id}`);
+                    const success = await window.app.loadSpecificQuestion(question.id);
+                    if (success) this.closeHistoryModal();
+                });
+            } else {
+                // 没有题目的格子
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (!isCurrentMonth) {
+                        // 非本月点击切换月份
+                        this.currentCalendarDate = new Date(dYear, dMonth, 1);
+                        this.initCalendarSelectors();
+                        this.renderHistoryCalendar();
+                    } else {
+                        // 本月无题目，显示提示
+                        this.showMessage('该日期暂无题目', 'info');
+                    }
+                });
+            }
+
+            this.elements.calendarGrid.appendChild(el);
+        }
+    }
+
+    /**
+     * 渲染历史题目列表
+     */
+    async renderHistoryList() {
+        if (!this.elements.historyList) return;
+        
+        this.elements.historyList.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div>';
+        
+        if (!window.app) {
+            this.elements.historyList.innerHTML = '<div class="message error">应用未初始化</div>';
+            return;
+        }
+        
+        const questions = await window.app.fetchPastQuestions();
+        
+        if (!questions || questions.length === 0) {
+            this.elements.historyList.innerHTML = '<div class="message">暂无过往题目</div>';
+            return;
+        }
+        
+        this.elements.historyList.innerHTML = '';
+        
+        questions.forEach(q => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <div class="history-info">
+                    <div class="history-title">${q.title}</div>
+                    <div class="history-meta">${q.author} · ${q.dynasty}</div>
+                </div>
+                <div class="history-date">${q.publish_date || ''}</div>
+            `;
+            
+            item.addEventListener('click', async () => {
+                const success = await window.app.loadSpecificQuestion(q.id);
+                if (success) {
+                    this.closeHistoryModal();
+                }
+            });
+            
+            this.elements.historyList.appendChild(item);
+        });
+    }
 
     /**
      * 切换主题
@@ -685,63 +923,8 @@ class UIManager {
      * 显示最高分
      */
     async showHighScores() {
-        try {
-            // 优先从 Supabase 获取排行榜
-            let remote = null;
-            if (window.app && typeof window.app.fetchLeaderboard === 'function') {
-                try {
-                    remote = await window.app.fetchLeaderboard(10);
-                } catch {}
-            }
-
-            if (remote && remote.length) {
-                let message = '🏆 在线排行榜（Top 10） 🏆\n\n';
-                remote.forEach((row, index) => {
-                    const medal = index < 3 ? ['🥇', '🥈', '🥉'][index] : `${index + 1}.`;
-                    const date = row.created_at ? new Date(row.created_at).toLocaleDateString() : '';
-                    const title = row.poem_title || '未知作品';
-                    const time = typeof row.duration_seconds === 'number' ? `${Math.round(row.duration_seconds)}秒` : '—';
-                    const guesses = typeof row.guess_count === 'number' ? `${row.guess_count}次` : '—';
-                    message += `${medal} 《${title}》\n`;
-                    message += `   分数: ${row.score} | 猜测: ${guesses} | 用时: ${time}\n`;
-                    if (row.author || row.dynasty) {
-                        message += `   作者: ${row.author || ''} ${row.dynasty ? `(${row.dynasty})` : ''}\n`;
-                    }
-                    if (date) {
-                        message += `   日期: ${date}\n`;
-                    }
-                    message += '\n';
-                });
-                alert(message);
-                return;
-            }
-
-            // 如果在线排行榜为空，提示后可回退到本地
-            if (remote && Array.isArray(remote) && remote.length === 0) {
-                this.showMessage('在线排行榜暂无记录，先玩一局试试吧！', 'info');
-            }
-
-            // 回退到本地排行榜
-            const highScores = JSON.parse(localStorage.getItem('highScores') || '[]');
-            if (highScores.length === 0) {
-                this.showMessage('暂无最高分记录', 'info');
-                return;
-            }
-
-            let message = '🏆 本地最高分排行榜 🏆\n\n';
-            highScores.forEach((score, index) => {
-                const date = new Date(score.date).toLocaleDateString();
-                const medal = index < 3 ? ['🥇', '🥈', '🥉'][index] : `${index + 1}.`;
-                message += `${medal} 《${score.title}》\n`;
-                message += `   分数: ${score.score}\n`;
-                message += `   猜测: ${score.guessCount}次 | 用时: ${score.time}\n`;
-                message += `   日期: ${date}\n\n`;
-            });
-            alert(message);
-        } catch (error) {
-            console.error('显示最高分失败:', error);
-            this.showMessage('读取排行榜失败', 'error');
-        }
+        this.showMessage('排行榜暂不可用', 'info');
+        return;
     }
 
     /**

@@ -40,7 +40,8 @@ class UIManager {
             historyList: document.getElementById('historyList'),
             calendarGrid: document.getElementById('calendarGrid'),
             yearSelect: document.getElementById('yearSelect'),
-            monthSelect: document.getElementById('monthSelect')
+            monthSelect: document.getElementById('monthSelect'),
+            toastContainer: document.getElementById('toastContainer')
         };
         
         // 用于日历的状态
@@ -447,35 +448,43 @@ class UIManager {
     }
 
     /**
-     * 显示消息
+     * 显示消息（支持全局 Toast）
      */
     showMessage(text, type = 'info', duration = 3000) {
-        if (!this.elements.message) return;
-
-        this.elements.message.textContent = text;
-        this.elements.message.className = `message ${type}`;
-        this.elements.message.setAttribute('aria-live', 'polite');
-        
-        // 添加淡入动画
-        this.elements.message.style.opacity = '0';
-        this.elements.message.style.transform = 'translateY(-10px)';
-        
-        requestAnimationFrame(() => {
-            this.elements.message.style.transition = 'all 0.3s ease';
+        // 1. 更新边栏消息（保留，作为辅助）
+        if (this.elements.message) {
+            this.elements.message.textContent = text;
+            this.elements.message.className = `message ${type}`;
             this.elements.message.style.opacity = '1';
-            this.elements.message.style.transform = 'translateY(0)';
-        });
+            
+            setTimeout(() => {
+                if (this.elements.message.textContent === text) {
+                    this.elements.message.style.opacity = '0';
+                }
+            }, duration);
+        }
 
-        // 自动清除消息
-        setTimeout(() => {
-            if (this.elements.message.textContent === text) {
-                this.elements.message.style.opacity = '0';
+        // 2. 显示全局 Toast（解决遮挡问题）
+        if (this.elements.toastContainer) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            // 根据类型添加图标
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '⚠️';
+            
+            toast.innerHTML = `<span>${icon}</span> <span>${text}</span>`;
+            this.elements.toastContainer.appendChild(toast);
+
+            // 自动移除
+            setTimeout(() => {
+                toast.classList.add('fade-out');
                 setTimeout(() => {
-                    this.elements.message.textContent = '';
-                    this.elements.message.className = 'message';
+                    toast.remove();
                 }, 300);
-            }
-        }, duration);
+            }, duration);
+        }
     }
 
     /**

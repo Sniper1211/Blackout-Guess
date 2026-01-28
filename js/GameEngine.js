@@ -560,7 +560,7 @@ class GameEngine {
      */
     getGameState() {
         return {
-            currentGameIndex: this.gameData.findIndex(game => game.title === this.currentGame?.title),
+            title: this.currentGame?.title, // 保存题目名称以便验证
             hiddenText: this.hiddenText,
             guessedLetters: Array.from(this.guessedLetters),
             guessCount: this.guessCount,
@@ -576,8 +576,8 @@ class GameEngine {
      */
     loadGameState(gameState) {
         try {
-            if (gameState.currentGameIndex >= 0 && gameState.currentGameIndex < this.gameData.length) {
-                this.currentGame = this.gameData[gameState.currentGameIndex];
+            // 验证题目名称是否匹配，如果不匹配则不恢复进度
+            if (gameState && this.currentGame && gameState.title === this.currentGame.title) {
                 this.hiddenText = gameState.hiddenText || [];
                 this.guessedLetters = new Set(gameState.guessedLetters || []);
                 this.guessCount = gameState.guessCount || 0;

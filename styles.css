@@ -660,17 +660,69 @@ input, textarea {
 .message {
     min-height: 24px;
     text-align: center;
-    font-size: 16px;
+    font-size: 14px; /* 稍微缩小边栏提示 */
     font-weight: 500;
     margin-top: 10px;
+    opacity: 0.8;
 }
 
-.message.error {
-    color: var(--accent-color);
+/* 全局 Toast 容器 */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999; /* 确保在所有模态窗之上 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none; /* 防止遮挡下方点击 */
 }
 
-.message.success {
-    color: var(--success-color);
+/* 单个 Toast 样式 */
+.toast {
+    background: var(--card-background);
+    color: var(--text-color);
+    padding: 12px 24px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: toastIn 0.3s ease forwards;
+    pointer-events: auto; /* 恢复点击 */
+    max-width: 90vw;
+    border-left: 4px solid var(--primary-color);
+    border: 1px solid var(--border-color); /* 添加轻微边框在暗色模式下更清晰 */
+}
+
+.toast.success {
+    border-left-color: var(--success-color);
+}
+
+.toast.error {
+    border-left-color: var(--accent-color);
+}
+
+.toast.info {
+    border-left-color: var(--primary-color);
+}
+
+.toast.fade-out {
+    animation: toastOut 0.3s ease forwards;
+}
+
+@keyframes toastIn {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes toastOut {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(-20px); opacity: 0; }
 }
 
 /* 已猜字母列表 */

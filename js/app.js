@@ -220,6 +220,7 @@ class App {
                     .eq('publish_date', todayStr)
                     .eq('language', 'zh-CN')
                     .eq('enabled', true)
+                    .order('id') // 增加排序确保确定性
                     .limit(10);
                 if (error) {
                     console.warn('加载今日发布失败：', error.message);
@@ -232,6 +233,7 @@ class App {
                     .select('id,type,title,content,author,dynasty,enabled,language')
                     .eq('enabled', true)
                     .eq('language', 'zh-CN')
+                    .order('id') // 增加排序确保确定性
                     .limit(100);
                 if (freeErr) {
                     console.warn('加载自由模式题库失败：', freeErr.message);
@@ -272,12 +274,17 @@ class App {
 
             if (items.length > 0) {
                 if (dailyMode) {
+                    // 每日模式：严格取第一条（通常数据库中每天只应发布一条）
                     this.gameEngine.gameData = items.slice(0, 1);
-                    console.log(`题库已加载：${this.gameEngine.gameData.length} 条（每日模式）`);
+                    console.log(`[每日模式] 已加载今日题目: 《${this.gameEngine.gameData[0].title}》`);
                 } else {
-                    const pick = items[Math.floor(Math.random() * items.length)];
+                    // 自由模式：使用日期作为种子进行伪随机选择，确保同一天刷新页面题目一致
+                    const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+                    const index = dateSeed % items.length;
+                    const pick = items[index];
+                    
                     this.gameEngine.gameData = [pick];
-                    console.log(`题库已加载：1 条（自由模式，随机选择）`);
+                    console.log(`[自由模式] 已根据日期绑定题目: 《${pick.title}》（索引 ${index}/${items.length}）`);
                 }
                 return true;
             } else {
@@ -341,9 +348,11 @@ class App {
             if (data && data.length > 0) {
                 data.forEach(q => {
                     if (q.publish_date) {
-                        // 确保只取日期部分 (YYYY-MM-DD)
-                        const dateKey = q.publish_date.split('T')[0];
-                        this.questionsMap[dateKey] = q;
+                        // 鲁棒的日期提取：处理 "YYYY-MM-DD", "YYYY-MM-DDTHH:mm:ss", "YYYY-MM-DD HH:mm:ss"
+                        const dateKey = q.publish_date.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+                        if (dateKey) {
+                            this.questionsMap[dateKey] = q;
+                        }
                     }
                 });
             }

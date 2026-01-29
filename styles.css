@@ -1206,14 +1206,24 @@ input, textarea {
 }
 
 .calendar-date.other-month {
-    color: #bbb;
+    color: #888;
     background: transparent;
+}
+
+.dark-theme .calendar-date.other-month {
+    color: #aaa;
 }
 
 .calendar-date.today {
     background: #98e698 !important; /* Green from image */
     color: #000 !important;
     font-weight: bold;
+}
+
+.calendar-date.future-date {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: transparent !important;
 }
 
 .calendar-date.has-question {

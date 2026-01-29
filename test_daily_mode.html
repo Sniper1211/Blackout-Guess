@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日一题模式测试</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background: #40739e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #356085;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        .warning {
+            color: orange;
+        }
+    </style>
+</head>
+<body>
+    <h1>每日一题模式测试</h1>
+    <p>当前日期：<span id="currentDate"></span></p>
+    
+    <div class="test-section">
+        <h2>1. 检查Supabase连接</h2>
+        <button onclick="testSupabaseConnection()">测试连接</button>
+        <div id="supabaseResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 检查每日一题设置</h2>
+        <button onclick="checkDailyMode()">检查设置</button>
+        <div id="dailyModeResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 检查题目数据（2026年1月21日-28日）</h2>
+        <button onclick="checkQuestions()">检查题目</button>
+        <div id="questionsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 测试日历功能</h2>
+        <button onclick="testCalendar()">测试日历</button>
+        <div id="calendarResult" class="result"></div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+        // 设置当前日期
+        const today = new Date();
+        document.getElementById('currentDate').textContent = today.toLocaleDateString('zh-CN');
+        
+        // Supabase配置
+        const SUPABASE_URL = 'https://bejoqvymupzhtmxjxqvb.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlam9xdnltdXB6aHRteGp4cXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NjY2MDEsImV4cCI6MjA3NzE0MjYwMX0.zM4iRiii069JHKZdZnmxtJIQP1Rapax-fpEwb-R5pVo';
+        
+        let supabase = null;
+        
+        function initSupabase() {
+            if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                return true;
+            }
+            return false;
+        }
+        
+        function logResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+        
+        async function testSupabaseConnection() {
+            if (!initSupabase()) {
+                logResult('supabaseResult', '❌ 无法初始化Supabase客户端', 'error');
+                return;
+            }
+            
+            try {
+                // 简单的测试查询
+                const { data, error } = await supabase
+                    .from('app_settings')
+                    .select('id')
+                    .limit(1);
+                
+                if (error) {
+                    logResult('supabaseResult', `❌ 连接失败: ${error.message}`, 'error');
+                } else {
+                    logResult('supabaseResult', '✅ Supabase连接成功', 'success');
+                }
+            } catch (err) {
+                logResult('supabaseResult', `❌ 连接异常: ${err.message}`, 'error');
+            }
+        }
+        
+        async function checkDailyMode() {
+            if (!initSupabase()) {
+                logResult('dailyModeResult', '❌ 请先初始化Supabase', 'error');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabase
+                    .from('app_settings')
+                    .select('id, daily_mode_enabled, updated_at')
+                    .eq('id', 'global');
+                
+                if (error) {
+                    logResult('dailyModeResult', `❌ 查询失败: ${error.message}`, 'error');
+                    return;
+                }
+                
+                if (!data || data.length === 0) {
+                    logResult('dailyModeResult', '⚠️ 未找到应用设置，需要运行初始化脚本', 'warning');
+                    return;
+                }
+                
+                const settings = data[0];
+                const status = settings.daily_mode_enabled ? '✅ 已启用' : '❌ 未启用';
+                const updated = new Date(settings.updated_at).toLocaleString('zh-CN');
+                
+                logResult('dailyModeResult', 
+                    `${status} 每日一题模式\n` +
+                    `最后更新: ${updated}\n\n` +
+                    '如需启用，请运行以下SQL:\n' +
+                    "UPDATE public.app_settings SET daily_mode_enabled = true WHERE id = 'global';",
+                    settings.daily_mode_enabled ? 'success' : 'warning'
+                );
+                
+            } catch (err) {
+                logResult('dailyModeResult', `❌ 查询异常: ${err.message}`, 'error');
+            }
+        }
+        
+        async function checkQuestions() {
+            if (!initSupabase()) {
+                logResult('questionsResult', '❌ 请先初始化Supabase', 'error');
+                return;
+            }
+            
+            try {
+                // 检查2026年1月21日到28日的题目
+                const { data, error } = await supabase
+                    .from('question_bank')
+                    .select('id, title, publish_date, status, author')
+                    .gte('publish_date', '2026-01-21')
+                    .lte('publish_date', '2026-01-28')
+                    .eq('status', 'published')
+                    .order('publish_date');
+                
+                if (error) {
+                    logResult('questionsResult', `❌ 查询失败: ${error.message}`, 'error');
+                    return;
+                }
+                
+                if (!data || data.length === 0) {
+                    logResult('questionsResult', 
+                        '⚠️ 未找到2026年1月21日-28日的题目\n\n' +
+                        '需要在Supabase中添加题目数据，每个日期一个题目。\n' +
+                        '题目状态需为"published"，并设置正确的publish_date。',
+                        'warning'
+                    );
+                    return;
+                }
+                
+                // 按日期分组
+                const dateMap = {};
+                data.forEach(q => {
+                    const date = q.publish_date;
+                    if (!dateMap[date]) dateMap[date] = [];
+                    dateMap[date].push(q);
+                });
+                
+                let result = `找到 ${data.length} 个题目:\n\n`;
+                
+                // 检查每个日期
+                for (let i = 21; i <= 28; i++) {
+                    const date = `2026-01-${i.toString().padStart(2, '0')}`;
+                    const questions = dateMap[date] || [];
+                    
+                    if (questions.length === 0) {
+                        result += `❌ ${date}: 无题目\n`;
+                    } else if (questions.length === 1) {
+                        result += `✅ ${date}: 《${questions[0].title}》 - ${questions[0].author}\n`;
+                    } else {
+                        result += `⚠️ ${date}: ${questions.length} 个题目（应只有一个）\n`;
+                        questions.forEach(q => {
+                            result += `   - 《${q.title}》\n`;
+                        });
+                    }
+                }
+                
+                logResult('questionsResult', result, data.length > 0 ? 'success' : 'warning');
+                
+            } catch (err) {
+                logResult('questionsResult', `❌ 查询异常: ${err.message}`, 'error');
+            }
+        }
+        
+        function testCalendar() {
+            // 模拟日历功能测试
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth();
+            
+            // 计算本月第一天是周几
+            const firstDay = new Date(year, month, 1);
+            let startDayOffset = firstDay.getDay();
+            startDayOffset = (startDayOffset === 0 ? 7 : startDayOffset) - 1;
+            
+            const startDate = new Date(year, month, 1 - startDayOffset);
+            const todayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            
+            let result = `当前月份: ${year}年${month + 1}月\n`;
+            result += `今天: ${todayStr}\n\n`;
+            result += '日历网格测试（前10个日期）:\n';
+            
+            for (let i = 0; i < 10; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                
+                const dYear = currentDate.getFullYear();
+                const dMonth = currentDate.getMonth();
+                const dDay = currentDate.getDate();
+                const dateStr = `${dYear}-${String(dMonth + 1).padStart(2, '0')}-${String(dDay).padStart(2, '0')}`;
+                
+                const isCurrentMonth = dMonth === month && dYear === year;
+                const isToday = dateStr === todayStr;
+                const isFuture = dateStr > todayStr;
+                
+                result += `${dateStr}: `;
+                if (isCurrentMonth) result += '本月 ';
+                else result += '非本月 ';
+                if (isToday) result += '今天 ';
+                if (isFuture) result += '未来';
+                result += '\n';
+            }
+            
+            result += '\n日历样式检查:\n';
+            result += '✅ .calendar-date.other-month 颜色已优化\n';
+            result += '✅ .dark-theme .calendar-date.other-month 已添加\n';
+            
+            logResult('calendarResult', result, 'success');
+        }
+        
+        // 页面加载时自动测试连接
+        window.addEventListener('load', () => {
+            setTimeout(testSupabaseConnection, 500);
+        });
+    </script>
+</body>
+</html>

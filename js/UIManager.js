@@ -653,10 +653,15 @@ class UIManager {
      * 渲染历史题目日历
      */
     async renderHistoryCalendar() {
-        if (!this.elements.calendarGrid) return;
+        if (!this.elements.calendarGrid) {
+            console.warn('[DEBUG] 日历网格元素不存在');
+            return;
+        }
 
         const year = this.currentCalendarDate.getFullYear();
         const month = this.currentCalendarDate.getMonth();
+        
+        console.log(`[DEBUG] 开始渲染日历，年份: ${year}, 月份: ${month + 1}`);
 
         // 同步选择框
         if (this.elements.yearSelect) this.elements.yearSelect.value = year;
@@ -664,7 +669,10 @@ class UIManager {
 
         // 显示加载状态（如果数据未缓存，用户会看到短暂loading，否则瞬间渲染）
         // 这里不强制清空innerHTML，以避免闪烁，仅在无数据时显示loading
-        if (!window.app) return;
+        if (!window.app) {
+            console.warn('[DEBUG] window.app 不存在');
+            return;
+        }
         
         // 计算需要的月份数据（当前月，可能还有上月和下月）
         // 简单起见，我们加载当前月、上个月和下个月，确保网格首尾的日期都有数据
@@ -680,9 +688,12 @@ class UIManager {
              this.elements.calendarGrid.innerHTML = '<div class="loading-spinner" style="grid-column: span 7; margin: 20px auto;"></div>';
         }
 
+        console.log(`[DEBUG] 开始获取月份题目数据，当前月: ${currentMonthKey}`);
         await Promise.all(promises);
         
         const questionMap = window.app.questionsMap || {};
+        console.log(`[DEBUG] 题目映射表大小: ${Object.keys(questionMap).length}`);
+        console.log(`[DEBUG] 题目映射表内容:`, Object.keys(questionMap).slice(0, 5)); // 只显示前5个
 
         this.elements.calendarGrid.innerHTML = '';
 
@@ -701,8 +712,10 @@ class UIManager {
         startDayOffset = (startDayOffset === 0 ? 7 : startDayOffset) - 1; // 转换为周一为 0
 
         const startDate = new Date(year, month, 1 - startDayOffset);
-        const today = new Date();
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        
+        // 使用DateUtils处理日期，解决时区问题
+        const todayStr = window.DateUtils ? window.DateUtils.getTodayString() : 
+            `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
 
         // 始终渲染 42 个格子 (6 行)
         for (let i = 0; i < 42; i++) {
@@ -715,25 +728,41 @@ class UIManager {
             const dateStr = `${dYear}-${String(dMonth + 1).padStart(2, '0')}-${String(dDay).padStart(2, '0')}`;
             
             const isCurrentMonth = dMonth === month && dYear === year;
-            const isToday = dateStr === todayStr;
+            
+            // 使用DateUtils进行日期比较
+            let isToday = dateStr === todayStr;
+            let isFuture = dateStr > todayStr;
+            
+            if (window.DateUtils) {
+                isToday = window.DateUtils.isToday(dateStr);
+                isFuture = window.DateUtils.isFutureDate(dateStr);
+            }
             const question = questionMap[dateStr];
             
-            // Debug: 检查昨天的匹配情况
-            if (dateStr === '2026-01-27') {
-                console.log('Rendering 2026-01-27', { question, dateStr, mapKeys: Object.keys(questionMap) });
+            // 调试日志：显示重要日期的题目信息
+            if (question && (isToday || dateStr.includes('2026-01'))) {
+                console.log(`[DEBUG] 日期 ${dateStr} 找到题目:`, {
+                    id: question.id,
+                    title: question.title,
+                    isCurrentMonth,
+                    isToday,
+                    isFuture
+                });
             }
-
+            
             const el = document.createElement('div');
             el.className = 'calendar-date';
             if (isCurrentMonth) el.classList.add('current-month');
             else el.classList.add('other-month');
             
             if (isToday) el.classList.add('today');
+            if (isFuture) el.classList.add('future-date');
             if (question) el.classList.add('has-question');
 
             el.innerHTML = `<span class="date-num">${dDay}</span>`;
 
-            if (question) {
+            if (question && !isFuture) { // 即使 DB 有数据，未来日期也不可点击
+                console.log(`[DEBUG] 为日期 ${dateStr} 添加可点击题目: ${question.title}`);
                 const marker = document.createElement('div');
                 marker.className = 'question-marker';
                 el.appendChild(marker);
@@ -747,9 +776,15 @@ class UIManager {
                     if (success) this.closeHistoryModal();
                 });
             } else {
-                // 没有题目的格子
+                // 没有题目或未来日期的格子
                 el.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    
+                    if (isFuture) {
+                        this.showMessage('别着急，日子还没到', 'info');
+                        return;
+                    }
+
                     if (!isCurrentMonth) {
                         // 非本月点击切换月份
                         this.currentCalendarDate = new Date(dYear, dMonth, 1);

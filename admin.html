@@ -7,164 +7,277 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="styles.css">
   <meta name="robots" content="noindex">
+  <!-- 引入 Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
-  <nav class="site-nav" aria-label="主要导航">
-    <a href="index.html">首页</a>
-    <a href="help.html">说明</a>
-    <a href="admin.html" class="active">后台</a>
-  </nav>
-
-  <div class="page-container">
-    <div class="page-header">
-      <h1 class="page-title">管理员后台</h1>
-      <div class="page-actions">
-        <span id="adminUserBadge" class="mono">未登录</span>
-        <button id="adminBtnLogin" class="btn">使用 Google 登录</button>
-        <button id="adminBtnLogout" class="btn btn-outline" style="display:none">退出</button>
-      </div>
+<body class="admin-page-v3">
+  <!-- 侧边导航栏 -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-header">
+      <img src="favicon.svg" alt="Logo" class="sidebar-logo">
+      <h2 class="sidebar-title">诗词管理</h2>
     </div>
+    
+    <nav class="sidebar-menu">
+      <button class="menu-item active" data-tab="tab-dashboard">
+        <span class="icon">📊</span> 控制台
+      </button>
+      <button class="menu-item" data-tab="tab-list">
+        <span class="icon">📖</span> 诗词库管理
+      </button>
+      <button class="menu-item" data-tab="tab-calendar">
+        <span class="icon">📅</span> 发布排期
+      </button>
+      <button class="menu-item" data-tab="tab-settings">
+        <span class="icon">⚙️</span> 系统设置
+      </button>
+    </nav>
 
-    <div id="adminGate" class="message" style="margin-top:10px">请登录管理员账号以继续</div>
+    <div class="sidebar-footer">
+      <div id="adminUserBadge" class="user-badge">未登录</div>
+      <button id="adminBtnLogout" class="logout-btn" style="display:none">退出登录</button>
+    </div>
+  </aside>
 
-    <section id="adminContent" style="display:none; margin-top:16px">
-      <h2>系统设置</h2>
-      <div class="form" style="display:flex; align-items:center; gap:12px; margin-bottom:16px">
-        <label style="display:flex; align-items:center; gap:6px">
-          <input type="checkbox" id="toggleDailyMode">
-          每日一题模式
-        </label>
-        <span id="dailyModeBadge" class="mono">当前：关闭</span>
+  <!-- 主内容区 -->
+  <main class="admin-main">
+    <header class="main-header">
+      <div class="header-left">
+        <h1 id="currentTabTitle">概览</h1>
       </div>
+      <div class="header-right">
+        <span id="lastUpdated" class="last-updated">最后更新: --</span>
+        <button id="adminBtnLogin" class="btn btn-primary">Google 登录</button>
+      </div>
+    </header>
 
-      <h2>创建/编辑题目</h2>
-      <form id="questionForm" class="form" style="display:grid; gap:8px; grid-template-columns:1fr 1fr;">
-        <label>标题
-          <input type="text" id="qTitle" placeholder="如：登鹳雀楼">
-        </label>
-        <label>作者
-          <input type="text" id="qAuthor" placeholder="如：王之涣">
-        </label>
-        <label>朝代
-          <input type="text" id="qDynasty" placeholder="如：唐">
-        </label>
-        <label>类型
-          <select id="qType">
-            <option value="poem">poem</option>
-            <option value="word">word</option>
-          </select>
-        </label>
-        <label>语言
-          <select id="qLang">
-            <option value="zh-CN" selected>zh-CN</option>
-            <option value="en">en</option>
-          </select>
-        </label>
-        <label>启用
-          <select id="qEnabled">
-            <option value="true" selected>true</option>
-            <option value="false">false</option>
-          </select>
-        </label>
-        <label style="grid-column:1 / -1">正文
-          <textarea id="qContent" rows="6" placeholder="第一行建议放标题，下一行开始正文"></textarea>
-        </label>
+    <div id="adminGate" class="gate-message">请登录管理员账号以访问后台系统</div>
 
-        <label>状态
-          <select id="qStatus">
-            <option value="draft" selected>draft</option>
-            <option value="scheduled">scheduled</option>
-            <option value="published">published</option>
-          </select>
-        </label>
-        <label>发布日期
-          <input type="date" id="qPublishDate">
-        </label>
+    <div id="adminContent" class="content-container" style="display:none">
+      
+      <!-- 选项卡 1：控制台仪表盘 -->
+      <section id="tab-dashboard" class="tab-content active">
+        <!-- 统计卡片行 -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-info">
+              <span class="stat-label">诗词总数</span>
+              <h3 id="statTotalPoems" class="stat-value">---</h3>
+            </div>
+            <div class="stat-icon icon-blue">📚</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-info">
+              <span class="stat-label">已发布</span>
+              <h3 id="statPublishedPoems" class="stat-value">---</h3>
+            </div>
+            <div class="stat-icon icon-green">✅</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-info">
+              <span class="stat-label">已排期</span>
+              <h3 id="statScheduledPoems" class="stat-value">---</h3>
+            </div>
+            <div class="stat-icon icon-amber">📅</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-info">
+              <span class="stat-label">今日参与</span>
+              <h3 id="statTodayParticipation" class="stat-value">---</h3>
+            </div>
+            <div class="stat-icon icon-purple">👥</div>
+          </div>
+        </div>
 
-        <div style="grid-column:1 / -1; display:flex; gap:8px;">
-          <button type="button" id="btnCreate" class="btn btn-primary">创建</button>
-          <button type="button" id="btnUpdate" class="btn">更新选中</button>
+        <!-- 趋势图与今日诗词 -->
+        <div class="dashboard-middle-grid">
+          <div class="dashboard-chart-card">
+            <h3>本周参与度趋势</h3>
+            <div class="chart-container">
+              <canvas id="participationChart"></canvas>
+            </div>
+          </div>
+          
+          <div class="today-poem-card">
+            <div class="card-header">
+              <h3>今日展示诗词</h3>
+              <span id="todayPoemStatus" class="status-badge status-published">已发布</span>
+            </div>
+            <div id="todayPoemDisplay" class="poem-preview-box">
+              <div class="placeholder">正在加载今日诗词...</div>
+            </div>
+            <div class="card-actions">
+              <button id="btnViewTodayDetail" class="btn btn-outline btn-sm">查看详情</button>
+              <button id="btnChangeTodayPoem" class="btn btn-amber btn-sm">更换</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 选项卡 2：题目管理 (整合已有功能) -->
+      <section id="tab-list" class="tab-content">
+        <div class="admin-panel">
+          <div class="panel-header">
+            <h3>诗词库列表</h3>
+            <div class="panel-actions">
+              <input type="text" id="searchQuestions" placeholder="搜索标题、内容或作者..." class="search-input">
+              <button id="btnCreateNew" class="btn btn-primary">+ 新增题目</button>
+            </div>
+          </div>
+
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>状态：</label>
+              <select id="filterStatus">
+                <option value="all">全部</option>
+                <option value="draft">草稿</option>
+                <option value="scheduled">已排期</option>
+                <option value="published">已发布</option>
+              </select>
+            </div>
+            <span class="mono" id="totalCount">共：0 条</span>
+          </div>
+
+          <div class="table-responsive">
+            <table id="questionTable" class="admin-table">
+              <thead>
+                <tr>
+                  <th style="width:40px"><input type="checkbox" id="selectAllHeader"></th>
+                  <th style="width:60px">ID</th>
+                  <th style="width:15%">标题</th>
+                  <th>全文预览</th>
+                  <th style="width:100px">作者</th>
+                  <th style="width:100px">状态</th>
+                  <th style="width:120px">发布日期</th>
+                  <th style="width:160px">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- 数据动态填充 -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination" id="pagination"></div>
+        </div>
+      </section>
+
+      <!-- 选项卡 3：排期日历 (整合已有功能) -->
+      <section id="tab-calendar" class="tab-content">
+        <div class="admin-panel">
+          <div class="panel-header">
+            <h3>发布排期计划</h3>
+            <div class="calendar-nav">
+              <button id="calPrev" class="btn btn-sm">&lt;</button>
+              <span id="calLabel" class="current-month-label">加载中…</span>
+              <button id="calNext" class="btn btn-sm">&gt;</button>
+            </div>
+          </div>
+          <div id="calendarGrid" class="admin-calendar-grid">
+            <div class="weekday">日</div><div class="weekday">一</div><div class="weekday">二</div>
+            <div class="weekday">三</div><div class="weekday">四</div><div class="weekday">五</div>
+            <div class="weekday">六</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 选项卡 4：系统设置 -->
+      <section id="tab-settings" class="tab-content">
+        <div class="admin-panel">
+          <h3>全局系统设置</h3>
+          <div class="settings-list">
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-name">每日一题模式</span>
+                <span id="dailyModeDesc" class="setting-desc">开启后系统将锁定日期题目，否则随机刷新。</span>
+                <div style="margin-top: 8px;">
+                  <span id="dailyModeBadge" class="badge">加载中...</span>
+                </div>
+              </div>
+              <div class="setting-control">
+                <label class="switch">
+                  <input type="checkbox" id="toggleDailyMode">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <span class="setting-name">数据维护</span>
+                <span class="setting-desc">一键清理重复内容或执行自动排期。</span>
+              </div>
+              <div class="setting-control">
+                <button id="btnCleanDuplicates" class="btn btn-outline btn-sm">清理重复</button>
+                <button id="btnAutoScheduleAll" class="btn btn-outline btn-sm">自动排期</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- 编辑模态窗 (重用之前优化的宽屏布局) -->
+  <div id="editModal" class="modal">
+    <div class="modal-content admin-modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">编辑题目</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <form id="questionForm" class="admin-form">
+        <div class="form-group form-group-content">
+          <label for="qContent">正文 (每行一句)</label>
+          <textarea id="qContent" required></textarea>
+        </div>
+        <div class="form-meta-group">
+          <div class="form-row">
+            <div class="form-group"><label>标题</label><input type="text" id="qTitle" required></div>
+            <div class="form-group"><label>作者</label><input type="text" id="qAuthor" required></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>朝代</label><input type="text" id="qDynasty"></div>
+            <div class="form-group">
+              <label>类型</label>
+              <select id="qType"><option value="poem">诗词</option><option value="word">词语</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>状态</label>
+              <select id="qStatus"><option value="draft">草稿</option><option value="scheduled">已排期</option><option value="published">已发布</option></select>
+            </div>
+            <div class="form-group"><label>日期</label><input type="date" id="qPublishDate"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>语言</label>
+              <select id="qLang">
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁体中文</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+            <div class="form-group checkbox-group" style="display:flex; align-items:flex-end; padding-bottom:10px">
+              <label><input type="checkbox" id="qEnabled" checked> 启用该题目</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline close-modal">取消</button>
+          <button type="submit" class="btn btn-primary">保存修改</button>
         </div>
       </form>
-
-      <h2 style="margin-top:16px">题目列表</h2>
-      <div class="lb-actions" style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
-        <button id="btnReload" class="btn">刷新</button>
-        <button id="btnShowAll" class="btn">显示全部</button>
-        <span class="mono" id="bulkCount" style="margin-left:auto">已选中：0</span>
-      </div>
-      <div class="form" style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
-        <label style="display:flex; align-items:center; gap:6px">
-          <input type="checkbox" id="selectAllRows">
-          全选
-        </label>
-        <label style="display:flex; align-items:center; gap:6px">
-          批量发布日期
-          <input type="date" id="bulkPublishDate">
-        </label>
-        <button id="btnBulkSchedule" class="btn">批量排期</button>
-        <button id="btnBulkPublish" class="btn btn-primary">批量发布</button>
-      </div>
-
-      <h2 style="margin-top:8px">排期日历</h2>
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
-        <button id="calPrev" class="btn">上个月</button>
-        <span id="calLabel" class="mono">加载中…</span>
-        <button id="calNext" class="btn">下个月</button>
-        <span class="mono" style="margin-left:auto">筛选日期：<span id="dateFilterBadge">无</span></span>
-        <button id="btnClearDateFilter" class="btn btn-outline">清除筛选</button>
-      </div>
-      <div id="calendarGrid" class="mono" style="display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; user-select:none">
-        <!-- 周标题行 -->
-        <div style="opacity:0.7">日</div>
-        <div style="opacity:0.7">一</div>
-        <div style="opacity:0.7">二</div>
-        <div style="opacity:0.7">三</div>
-        <div style="opacity:0.7">四</div>
-        <div style="opacity:0.7">五</div>
-        <div style="opacity:0.7">六</div>
-        <!-- 日期格子将由脚本填充 -->
-      </div>
-
-      <table id="questionTable" class="mono" style="width:100%; border-collapse:collapse">
-        <thead>
-          <tr>
-            <th style="width:36px"><input type="checkbox" id="selectAllHeader"></th>
-            <th style="text-align:left">ID</th>
-            <th style="text-align:left">标题</th>
-            <th>状态</th>
-            <th>发布日期</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
+    </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script>
-    // 尝试从 localStorage 复用 Supabase 配置
-    try {
-      window.SUPABASE_URL = localStorage.getItem('SUPABASE_URL') || window.SUPABASE_URL || '';
-      window.SUPABASE_ANON_KEY = localStorage.getItem('SUPABASE_ANON_KEY') || window.SUPABASE_ANON_KEY || '';
-    } catch {}
-    // 兜底：保证 admin.html 独立访问也能工作（与 index.html 保持一致）
-    if (!window.SUPABASE_URL) {
-      window.SUPABASE_URL = 'https://bejoqvymupzhtmxjxqvb.supabase.co';
-    }
-    if (!window.SUPABASE_ANON_KEY) {
-      window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlam9xdnltdXB6aHRteGp4cXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NjY2MDEsImV4cCI6MjA3NzE0MjYwMX0.zM4iRiii069JHKZdZnmxtJIQP1Rapax-fpEwb-R5pVo';
-    }
-    try {
-      localStorage.setItem('SUPABASE_URL', window.SUPABASE_URL);
-      localStorage.setItem('SUPABASE_ANON_KEY', window.SUPABASE_ANON_KEY);
-    } catch {}
-  </script>
-  <script src="js/admin.js"></script>
+  <div id="toastContainer" class="toast-container"></div>
 
-  <!-- 可选：GA 初始化 -->
-  <script src="js/ga-config.js"></script>
-  <script src="js/analytics.js"></script>
+  <script>
+    window.SUPABASE_URL = 'https://bejoqvymupzhtmxjxqvb.supabase.co';
+    window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlam9xdnltdXB6aHRteGp4cXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NjY2MDEsImV4cCI6MjA3NzE0MjYwMX0.zM4iRiii069JHKZdZnmxtJIQP1Rapax-fpEwb-R5pVo';
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/admin.js"></script>
 </body>
 </html>

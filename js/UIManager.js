@@ -607,6 +607,9 @@ class UIManager {
         this.currentCalendarDate = new Date(); // 每次打开重置到当前月
         this.initCalendarSelectors();
         this.renderHistoryCalendar();
+        
+        // 根据系统偏好或网站主题自动应用深色主题
+        this.applyHistoryModalTheme();
     }
 
     /**
@@ -647,6 +650,38 @@ class UIManager {
         if (this.elements.historyModal) {
             this.elements.historyModal.classList.remove('show');
         }
+    }
+
+    /**
+     * 应用历史弹窗主题（根据系统偏好或网站主题）
+     */
+    applyHistoryModalTheme() {
+        const modalContent = document.querySelector('.history-modal-content');
+        if (!modalContent) return;
+        
+        // 方法1：检查系统暗色模式偏好
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        // 方法2：检查网站是否应用了暗色主题（通过body类或CSS变量）
+        const isSiteDark = document.body.classList.contains('dark-mode') || 
+                          document.documentElement.classList.contains('dark-mode') ||
+                          getComputedStyle(document.documentElement).getPropertyValue('--background-color').includes('1a1a1a');
+        
+        // 如果系统偏好暗色或网站是暗色主题，则应用深色主题
+        if (prefersDarkScheme.matches || isSiteDark) {
+            modalContent.classList.add('dark-theme');
+        } else {
+            modalContent.classList.remove('dark-theme');
+        }
+        
+        // 监听系统主题变化
+        prefersDarkScheme.addEventListener('change', (e) => {
+            if (e.matches) {
+                modalContent.classList.add('dark-theme');
+            } else {
+                modalContent.classList.remove('dark-theme');
+            }
+        });
     }
 
     /**

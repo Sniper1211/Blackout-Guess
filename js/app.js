@@ -209,39 +209,42 @@ class App {
             const dd = String(today.getDate()).padStart(2, '0');
             const todayStr = `${yyyy}-${mm}-${dd}`;
 
-            const selectFields = 'id,type,title,content,author,dynasty,enabled,language,status,publish_date,published_at';
+            const selectFields = 'id,type,title,content,author,dynasty,enabled,language,status,publish_date';
 
             let rows = [];
             if (dailyMode) {
+                console.log(`[每日模式] 正在查询日期: ${todayStr}`);
                 let { data, error } = await this.supabase
                     .from('question_bank')
                     .select(selectFields)
-                    .eq('status', 'published')
+                    .in('status', ['published', 'scheduled']) // 允许已发布或已排期
                     .eq('publish_date', todayStr)
                     .eq('language', 'zh-CN')
                     .eq('enabled', true)
-                    .order('id') // 增加排序确保确定性
+                    .order('id') 
                     .limit(10);
                 if (error) {
-                    console.warn('加载今日发布失败：', error.message);
+                    console.warn('加载今日发布失败：', error.message, error);
                 }
                 rows = Array.isArray(data) ? data : [];
             } else {
                 // 自由模式：直接读取启用的中文题目，忽略发布状态
+                console.log('[自由模式] 正在随机加载题库');
                 const { data: freeData, error: freeErr } = await this.supabase
                     .from('question_bank')
                     .select('id,type,title,content,author,dynasty,enabled,language')
                     .eq('enabled', true)
                     .eq('language', 'zh-CN')
-                    .order('id') // 增加排序确保确定性
+                    .order('id') 
                     .limit(100);
                 if (freeErr) {
-                    console.warn('加载自由模式题库失败：', freeErr.message);
+                    console.warn('加载自由模式题库失败：', freeErr.message, freeErr);
                 }
                 rows = Array.isArray(freeData) ? freeData : [];
             }
             // 回退逻辑（仅在每日模式时适用）：今天没有内容→取最近发布
             if (dailyMode && rows.length === 0) {
+                console.log('[每日模式] 今日无排期，尝试加载最近发布的题目');
                 const { data: latest, error: err2 } = await this.supabase
                     .from('question_bank')
                     .select(selectFields)
@@ -249,10 +252,9 @@ class App {
                     .eq('language', 'zh-CN')
                     .eq('enabled', true)
                     .order('publish_date', { ascending: false, nullsLast: true })
-                    .order('published_at', { ascending: false, nullsLast: true })
                     .limit(1);
                 if (err2) {
-                    console.warn('加载最近发布失败：', err2.message);
+                    console.warn('加载最近发布失败：', err2.message, err2);
                 }
                 rows = Array.isArray(latest) ? latest : [];
             }

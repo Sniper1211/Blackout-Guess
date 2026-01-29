@@ -129,7 +129,7 @@ class GameEngine {
             }
         ];
         // 移除内置数据：改为空数组，由 App 加载在线题库填充
-        this.gameData = [];
+        // this.gameData = [];
 
         this.reset();
     }

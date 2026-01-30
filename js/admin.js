@@ -588,7 +588,7 @@
     }
     
     state.selectedId = id;
-    document.getElementById('modalTitle').textContent = `编辑题目 (ID: ${id})`;
+    document.getElementById('modalTitle').textContent = `编辑题目`;
     
     const form = document.getElementById('questionForm');
     form.qTitle.value = q.title || '';

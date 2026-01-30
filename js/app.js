@@ -316,10 +316,9 @@ class App {
         }
 
         try {
-            console.log(`[DEBUG] 开始获取月份题目，年份: ${year}, 月份: ${month + 1}`);
-            
+            // 生产环境中减少调试日志
             if (!this.supabase) {
-                console.warn('[DEBUG] Supabase客户端未初始化');
+                console.warn('Supabase客户端未初始化');
                 return;
             }
 
@@ -329,7 +328,6 @@ class App {
                 const range = window.DateUtils.getMonthRange(year, month);
                 startStr = range.firstDay;
                 endStr = range.lastDay;
-                console.log(`[DEBUG] 使用DateUtils计算日期范围: ${startStr} 到 ${endStr}`);
             } else {
                 const firstDay = new Date(year, month, 1);
                 const lastDay = new Date(year, month + 1, 0);
@@ -343,7 +341,6 @@ class App {
 
                 startStr = formatDate(firstDay);
                 endStr = formatDate(lastDay);
-                console.log(`[DEBUG] 使用原生方法计算日期范围: ${startStr} 到 ${endStr}`);
             }
 
             const { data, error } = await this.supabase
@@ -356,36 +353,27 @@ class App {
                 .lte('publish_date', endStr);
 
             if (error) {
-                console.warn(`[DEBUG] 获取 ${monthKey} 题目失败：`, error.message);
+                console.warn(`获取 ${monthKey} 题目失败：`, error.message);
                 return;
             }
 
-            console.log(`[DEBUG] 获取到 ${data ? data.length : 0} 个题目`);
+            // 生产环境中不显示具体题目数量
             
             // 更新缓存
             if (data && data.length > 0) {
                 data.forEach(q => {
                     if (q.publish_date) {
                         // 使用DateUtils解析日期确保时区一致性
-                        let dateKey = q.publish_date; // 默认使用原始值
-                        
+                        let dateKey;
                         if (window.DateUtils) {
-                            const dateObj = window.DateUtils.parseDatabaseDate(q.publish_date);
-                            if (!isNaN(dateObj.getTime())) {
-                                dateKey = window.DateUtils.formatLocalDate(dateObj);
-                            }
+                            dateKey = window.DateUtils.formatDateForStorage(q.publish_date);
                         } else {
-                            // 回退到原来的逻辑
-                            const dObj = new Date(q.publish_date);
-                            if (!isNaN(dObj.getTime())) {
-                                const y = dObj.getFullYear();
-                                const m = String(dObj.getMonth() + 1).padStart(2, '0');
-                                const d = String(dObj.getDate()).padStart(2, '0');
-                                dateKey = `${y}-${m}-${d}`;
-                            }
+                            // 简单解析
+                            const d = new Date(q.publish_date);
+                            dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                         }
                         
-                        console.log(`[DEBUG] 缓存题目: ${dateKey}`);
+                        // 生产环境中不显示缓存详情
                         this.questionsMap[dateKey] = q;
                     }
                 });
@@ -395,7 +383,7 @@ class App {
             this.loadedMonths.add(monthKey);
             
         } catch (e) {
-            console.warn(`获取 ${monthKey} 题目异常：`, e);
+            console.warn(`获取 ${monthKey} 题目异常`);
         }
     }
 
@@ -423,13 +411,13 @@ class App {
                 .limit(50);
 
             if (error) {
-                console.warn('获取过往题目失败：', error.message);
+                console.warn('获取过往题目失败');
                 return [];
             }
 
             return data || [];
         } catch (e) {
-            console.warn('获取过往题目异常：', e);
+            console.warn('获取过往题目异常');
             return [];
         }
     }
@@ -439,16 +427,14 @@ class App {
      */
     async loadSpecificQuestion(id) {
          try {
-            console.log(`[DEBUG] 开始加载特定题目，ID: ${id}`);
+            // 生产环境中不显示题目ID
             
             if (!this.supabase) {
-                console.warn('[DEBUG] Supabase客户端未初始化');
+                console.warn('Supabase客户端未初始化');
                 return false;
             }
             
             this.showLoadingIndicator();
-
-            console.log(`[DEBUG] 查询题目数据，ID: ${id}`);
             const { data, error } = await this.supabase
                 .from('question_bank')
                 .select('id, type, title, content, author, dynasty, enabled, language, publish_date, status')
@@ -456,43 +442,22 @@ class App {
                 .single();
 
             if (error) {
-                console.warn('[DEBUG] 加载特定题目失败：', error.message);
-                console.warn('[DEBUG] 错误详情：', error);
+                console.warn('加载特定题目失败');
                 this.hideLoadingIndicator();
                 return false;
             }
 
-            if (data) {
-                console.log(`[DEBUG] 成功加载题目数据`);
-                
-                const hasNewline = typeof data.content === 'string' && data.content.includes('\n');
-                const content = hasNewline ? data.content : `${data.title}\n${data.content || ''}`;
-                
-                const gameData = [{
-                    title: data.title || '未命名作品',
-                    content,
-                    author: data.author || '',
-                    dynasty: data.dynasty || ''
-                }];
-                
-                console.log(`[DEBUG] 设置游戏数据`);
-                this.gameEngine.gameData = gameData;
-                const initResult = this.gameEngine.initGame();
-                console.log(`[DEBUG] 游戏初始化结果：${initResult}`);
-                
-                this.uiManager.updateDisplay();
-                this.uiManager.showMessage('题目已加载', 'success');
+            if (!data || data.length === 0) {
+                console.warn('未找到题目');
                 this.hideLoadingIndicator();
-                return true;
-            } else {
-                console.warn('[DEBUG] 查询成功但未返回数据，ID:', id);
+                return false;
             }
-            
+
+            this.gameEngine.gameData = data;
             this.hideLoadingIndicator();
-            console.warn('[DEBUG] 加载题目失败，未找到数据');
-            return false;
+            return true;
         } catch (e) {
-            console.warn('加载特定题目异常：', e);
+            console.warn('加载特定题目异常');
             this.hideLoadingIndicator();
             return false;
         }

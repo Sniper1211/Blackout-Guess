@@ -727,8 +727,7 @@ class UIManager {
         await Promise.all(promises);
         
         const questionMap = window.app.questionsMap || {};
-        console.log(`[DEBUG] 题目映射表大小: ${Object.keys(questionMap).length}`);
-        console.log(`[DEBUG] 题目映射表内容:`, Object.keys(questionMap).slice(0, 5)); // 只显示前5个
+        // 生产环境中不显示题目映射表详情
 
         this.elements.calendarGrid.innerHTML = '';
 

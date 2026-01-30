@@ -278,7 +278,7 @@ class App {
                 if (dailyMode) {
                     // 每日模式：严格取第一条（通常数据库中每天只应发布一条）
                     this.gameEngine.gameData = items.slice(0, 1);
-                    console.log(`[每日模式] 已加载今日题目: 《${this.gameEngine.gameData[0].title}》`);
+                    console.log(`[每日模式] 已加载今日题目`);
                 } else {
                     // 自由模式：使用日期作为种子进行伪随机选择，确保同一天刷新页面题目一致
                     const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
@@ -286,7 +286,7 @@ class App {
                     const pick = items[index];
                     
                     this.gameEngine.gameData = [pick];
-                    console.log(`[自由模式] 已根据日期绑定题目: 《${pick.title}》（索引 ${index}/${items.length}）`);
+                    console.log(`[自由模式] 已根据日期绑定题目（索引 ${index}/${items.length}）`);
                 }
                 return true;
             } else {
@@ -385,7 +385,7 @@ class App {
                             }
                         }
                         
-                        console.log(`[DEBUG] 缓存题目: ${dateKey} -> ${q.title}`);
+                        console.log(`[DEBUG] 缓存题目: ${dateKey}`);
                         this.questionsMap[dateKey] = q;
                     }
                 });
@@ -463,13 +463,7 @@ class App {
             }
 
             if (data) {
-                console.log(`[DEBUG] 成功加载题目数据：`, {
-                    id: data.id,
-                    title: data.title,
-                    publish_date: data.publish_date,
-                    status: data.status,
-                    has_content: !!data.content
-                });
+                console.log(`[DEBUG] 成功加载题目数据`);
                 
                 const hasNewline = typeof data.content === 'string' && data.content.includes('\n');
                 const content = hasNewline ? data.content : `${data.title}\n${data.content || ''}`;
@@ -481,7 +475,7 @@ class App {
                     dynasty: data.dynasty || ''
                 }];
                 
-                console.log(`[DEBUG] 设置游戏数据，标题：${gameData[0].title}`);
+                console.log(`[DEBUG] 设置游戏数据`);
                 this.gameEngine.gameData = gameData;
                 const initResult = this.gameEngine.initGame();
                 console.log(`[DEBUG] 游戏初始化结果：${initResult}`);

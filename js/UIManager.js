@@ -774,15 +774,9 @@ class UIManager {
             }
             const question = questionMap[dateStr];
             
-            // 调试日志：显示重要日期的题目信息
+            // 调试日志：显示重要日期的题目信息（不泄露题目内容）
             if (question && (isToday || dateStr.includes('2026-01'))) {
-                console.log(`[DEBUG] 日期 ${dateStr} 找到题目:`, {
-                    id: question.id,
-                    title: question.title,
-                    isCurrentMonth,
-                    isToday,
-                    isFuture
-                });
+                console.log(`[DEBUG] 日期 ${dateStr} 找到题目`);
             }
             
             const el = document.createElement('div');
@@ -797,16 +791,16 @@ class UIManager {
             el.innerHTML = `<span class="date-num">${dDay}</span>`;
 
             if (question && !isFuture) { // 即使 DB 有数据，未来日期也不可点击
-                console.log(`[DEBUG] 为日期 ${dateStr} 添加可点击题目: ${question.title}`);
+                console.log(`[DEBUG] 为日期 ${dateStr} 添加可点击题目`);
                 const marker = document.createElement('div');
                 marker.className = 'question-marker';
                 el.appendChild(marker);
                 
-                el.title = `${question.title} - ${question.author}`;
+                el.title = `${dateStr} (有题目)`;
                 // 优先绑定有题目的点击事件
                 el.addEventListener('click', async (e) => {
                     e.stopPropagation(); // 防止冒泡
-                    console.log(`点击日期: ${dateStr}, 题目ID: ${question.id}`);
+                    console.log(`点击日期: ${dateStr}`);
                     const success = await window.app.loadSpecificQuestion(question.id);
                     if (success) this.closeHistoryModal();
                 });

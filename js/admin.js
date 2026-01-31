@@ -89,6 +89,48 @@
       await state.supabase.auth.signOut();
       window.location.reload();
     });
+
+    // 处理 OAuth 回跳的哈希并初始化当前登录状态
+    try {
+      const hash = window.location.hash || '';
+      const hasAuthParams = /access_token|refresh_token|error|code/i.test(hash);
+      if (hasAuthParams) {
+        state.supabase.auth.getSession()
+          .then(({ data, error }) => {
+            if (!error) {
+              state.user = data?.session?.user || null;
+              updateAuthUI();
+            }
+          })
+          .finally(() => {
+            try {
+              const url = new URL(window.location.href);
+              url.hash = '';
+              window.history.replaceState(null, document.title, url.toString());
+            } catch {}
+          });
+      } else {
+        // 没有哈希参数时，主动拉取当前用户
+        state.supabase.auth.getUser()
+          .then(({ data, error }) => {
+            if (!error) {
+              state.user = data?.user || null;
+              updateAuthUI();
+              if (state.user) {
+                checkAdmin().then(() => {
+                  if (state.isAdmin) {
+                    loadAppSettings();
+                    loadDashboardData();
+                    loadQuestions();
+                    loadCalendarData();
+                  }
+                });
+              }
+            }
+          })
+          .catch(() => {});
+      }
+    } catch {}
   }
 
   async function checkAdmin() {

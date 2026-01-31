@@ -18,6 +18,49 @@ class App {
     }
 
     /**
+     * 过滤题目数据，确保只返回符合条件的题目
+     * @param {Array} questions - 原始题目数组
+     * @returns {Array} 过滤后的题目数组
+     */
+    filterQuestions(questions) {
+        if (!Array.isArray(questions)) return [];
+        
+        return questions.filter(q => {
+            // 如果language字段存在，检查是否为中文
+            const isChinese = !q.language || q.language === 'zh-CN' || q.language === 'zh';
+            // 如果enabled字段存在，检查是否启用
+            const isEnabled = q.enabled === undefined || q.enabled === true;
+            // 检查状态是否为已发布或已排期（如果status字段存在）
+            const isValidStatus = !q.status || q.status === 'published' || q.status === 'scheduled';
+            
+            return isChinese && isEnabled && isValidStatus;
+        });
+    }
+
+    /**
+     * 带超时的Supabase查询
+     * @param {Function} queryFn - 查询函数
+     * @param {number} timeoutMs - 超时时间（毫秒，默认8000）
+     * @returns {Promise} 查询结果
+     */
+    async supabaseQueryWithTimeout(queryFn, timeoutMs = 8000) {
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error(`查询超时 (${timeoutMs}ms)`)), timeoutMs);
+        });
+
+        try {
+            return await Promise.race([queryFn(), timeoutPromise]);
+        } catch (error) {
+            // 如果是超时错误，记录并返回空结果
+            if (error.message.includes('超时')) {
+                console.warn('Supabase查询超时，返回空结果');
+                return { data: null, error: error };
+            }
+            throw error;
+        }
+    }
+
+    /**
      * 初始化应用程序
      */
     async init() {
@@ -214,33 +257,33 @@ class App {
             let rows = [];
             if (dailyMode) {
                 console.log(`[每日模式] 正在查询日期: ${todayStr}`);
-                let { data, error } = await this.supabase
-                    .from('question_bank')
-                    .select(selectFields)
-                    .in('status', ['published', 'scheduled']) // 允许已发布或已排期
-                    .eq('publish_date', todayStr)
-                    .eq('language', 'zh-CN')
-                    .eq('enabled', true)
-                    .order('id') 
-                    .limit(10);
+                let { data, error } = await this.supabaseQueryWithTimeout(() => 
+                    this.supabase
+                        .from('question_bank')
+                        .select(selectFields)
+                        .in('status', ['published', 'scheduled']) // 允许已发布或已排期
+                        .eq('publish_date', todayStr)
+                        .order('id') 
+                        .limit(10)
+                );
                 if (error) {
                     console.warn('加载今日发布失败：', error.message, error);
                 }
-                rows = Array.isArray(data) ? data : [];
+                rows = Array.isArray(data) ? this.filterQuestions(data) : [];
             } else {
                 // 自由模式：直接读取启用的中文题目，忽略发布状态
                 console.log('[自由模式] 正在随机加载题库');
-                const { data: freeData, error: freeErr } = await this.supabase
-                    .from('question_bank')
-                    .select('id,type,title,content,author,dynasty,enabled,language')
-                    .eq('enabled', true)
-                    .eq('language', 'zh-CN')
-                    .order('id') 
-                    .limit(100);
+                const { data: freeData, error: freeErr } = await this.supabaseQueryWithTimeout(() => 
+                    this.supabase
+                        .from('question_bank')
+                        .select('id,type,title,content,author,dynasty,enabled,language')
+                        .order('id') 
+                        .limit(100)
+                );
                 if (freeErr) {
                     console.warn('加载自由模式题库失败：', freeErr.message, freeErr);
                 }
-                rows = Array.isArray(freeData) ? freeData : [];
+                rows = Array.isArray(freeData) ? this.filterQuestions(freeData) : [];
             }
             // 回退逻辑（仅在每日模式时适用）：今天没有内容→取最近发布
             if (dailyMode && rows.length === 0) {
@@ -249,14 +292,12 @@ class App {
                     .from('question_bank')
                     .select(selectFields)
                     .eq('status', 'published')
-                    .eq('language', 'zh-CN')
-                    .eq('enabled', true)
                     .order('publish_date', { ascending: false, nullsLast: true })
                     .limit(1);
                 if (err2) {
                     console.warn('加载最近发布失败：', err2.message, err2);
                 }
-                rows = Array.isArray(latest) ? latest : [];
+                rows = Array.isArray(latest) ? this.filterQuestions(latest) : [];
             }
             // 自由模式下：若取到多条，前端随机取 1 条即可
 
@@ -343,14 +384,15 @@ class App {
                 endStr = formatDate(lastDay);
             }
 
-            const { data, error } = await this.supabase
-                .from('question_bank')
-                .select('id, title, author, dynasty, publish_date, status')
-                .eq('status', 'published')
-                .eq('language', 'zh-CN')
-                .eq('enabled', true)
-                .gte('publish_date', startStr)
-                .lte('publish_date', endStr);
+            // 更宽松的查询条件，兼容不同数据库结构
+            const { data, error } = await this.supabaseQueryWithTimeout(() => 
+                this.supabase
+                    .from('question_bank')
+                    .select('id, title, author, dynasty, publish_date, status, language, enabled')
+                    .eq('status', 'published')
+                    .gte('publish_date', startStr)
+                    .lte('publish_date', endStr)
+            );
 
             if (error) {
                 console.warn(`获取 ${monthKey} 题目失败：`, error.message);
@@ -361,7 +403,10 @@ class App {
             
             // 更新缓存
             if (data && data.length > 0) {
-                data.forEach(q => {
+                // 过滤符合条件的题目
+                const filteredData = this.filterQuestions(data);
+                
+                filteredData.forEach(q => {
                     if (q.publish_date) {
                         // 使用DateUtils解析日期确保时区一致性
                         let dateKey;
@@ -400,22 +445,22 @@ class App {
             const dd = String(today.getDate()).padStart(2, '0');
             const todayStr = `${yyyy}-${mm}-${dd}`;
 
-            const { data, error } = await this.supabase
-                .from('question_bank')
-                .select('id, title, author, dynasty, publish_date')
-                .eq('status', 'published')
-                .eq('language', 'zh-CN')
-                .eq('enabled', true)
-                .lte('publish_date', todayStr)
-                .order('publish_date', { ascending: false })
-                .limit(50);
+            const { data, error } = await this.supabaseQueryWithTimeout(() =>
+                this.supabase
+                    .from('question_bank')
+                    .select('id, title, author, dynasty, publish_date, status, language, enabled')
+                    .eq('status', 'published')
+                    .lte('publish_date', todayStr)
+                    .order('publish_date', { ascending: false })
+                    .limit(50)
+            );
 
             if (error) {
                 console.warn('获取过往题目失败');
                 return [];
             }
 
-            return data || [];
+            return this.filterQuestions(data || []);
         } catch (e) {
             console.warn('获取过往题目异常');
             return [];
@@ -435,11 +480,13 @@ class App {
             }
             
             this.showLoadingIndicator();
-            const { data, error } = await this.supabase
-                .from('question_bank')
-                .select('id, type, title, content, author, dynasty, enabled, language, publish_date, status')
-                .eq('id', id)
-                .single();
+            const { data, error } = await this.supabaseQueryWithTimeout(() =>
+                this.supabase
+                    .from('question_bank')
+                    .select('id, type, title, content, author, dynasty, enabled, language, publish_date, status')
+                    .eq('id', id)
+                    .single()
+            );
 
             if (error) {
                 console.warn('加载特定题目失败');
@@ -447,13 +494,21 @@ class App {
                 return false;
             }
 
-            if (!data || data.length === 0) {
+            if (!data) {
                 console.warn('未找到题目');
                 this.hideLoadingIndicator();
                 return false;
             }
 
-            this.gameEngine.gameData = data;
+            // 检查题目是否符合条件
+            const filteredData = this.filterQuestions([data]);
+            if (filteredData.length === 0) {
+                console.warn('题目不符合条件（语言、启用状态或状态不正确）');
+                this.hideLoadingIndicator();
+                return false;
+            }
+
+            this.gameEngine.gameData = filteredData;
             this.hideLoadingIndicator();
             return true;
         } catch (e) {

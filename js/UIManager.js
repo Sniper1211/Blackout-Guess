@@ -724,7 +724,7 @@ class UIManager {
         }
 
         console.log(`[DEBUG] 开始获取月份题目数据，当前月: ${currentMonthKey}`);
-        await Promise.all(promises);
+        await Promise.allSettled(promises);
         
         const questionMap = window.app.questionsMap || {};
         // 生产环境中不显示题目映射表详情

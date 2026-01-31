@@ -92,24 +92,63 @@
 
     // 处理 OAuth 回跳的哈希并初始化当前登录状态
     try {
-      const hash = window.location.hash || '';
-      const hasAuthParams = /access_token|refresh_token|error|code/i.test(hash);
-      if (hasAuthParams) {
-        state.supabase.auth.getSession()
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+      if (code) {
+        state.supabase.auth.exchangeCodeForSession({ code })
           .then(({ data, error }) => {
             if (!error) {
               state.user = data?.session?.user || null;
               updateAuthUI();
+              if (state.user) {
+                checkAdmin().then(() => {
+                  if (state.isAdmin) {
+                    loadAppSettings();
+                    loadDashboardData();
+                    loadQuestions();
+                    loadCalendarData();
+                  }
+                });
+              }
             }
           })
           .finally(() => {
             try {
-              const url = new URL(window.location.href);
-              url.hash = '';
+              url.searchParams.delete('code');
+              url.searchParams.delete('state');
               window.history.replaceState(null, document.title, url.toString());
             } catch {}
           });
       } else {
+        const hash = window.location.hash || '';
+        const hasTokens = /access_token|refresh_token/i.test(hash);
+        if (hasTokens) {
+          state.supabase.auth.getSession()
+            .then(({ data, error }) => {
+              if (!error) {
+                state.user = data?.session?.user || null;
+                updateAuthUI();
+                if (state.user) {
+                  checkAdmin().then(() => {
+                    if (state.isAdmin) {
+                      loadAppSettings();
+                      loadDashboardData();
+                      loadQuestions();
+                      loadCalendarData();
+                    }
+                  });
+                }
+              }
+            })
+            .finally(() => {
+              try {
+                const u = new URL(window.location.href);
+                u.hash = '';
+                window.history.replaceState(null, document.title, u.toString());
+              } catch {}
+            });
+          return;
+        }
         // 没有哈希参数时，主动拉取当前用户
         state.supabase.auth.getUser()
           .then(({ data, error }) => {

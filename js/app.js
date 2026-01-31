@@ -389,7 +389,7 @@ class App {
                 this.supabase
                     .from('question_bank')
                     .select('id, title, author, dynasty, publish_date, status, language, enabled')
-                    .eq('status', 'published')
+                    .in('status', ['published', 'scheduled'])
                     .gte('publish_date', startStr)
                     .lte('publish_date', endStr)
             );
@@ -509,6 +509,14 @@ class App {
             }
 
             this.gameEngine.gameData = filteredData;
+            if (this.uiManager && typeof this.uiManager.resetGame === 'function') {
+                this.uiManager.resetGame();
+            } else {
+                this.gameEngine.initGame();
+                if (this.uiManager && typeof this.uiManager.updateDisplay === 'function') {
+                    this.uiManager.updateDisplay();
+                }
+            }
             this.hideLoadingIndicator();
             return true;
         } catch (e) {

@@ -5,6 +5,44 @@
 
 class DateUtils {
     /**
+     * 将任意日期值规范化为用于存储/比较的 YYYY-MM-DD 字符串
+     * 可处理：Date对象、YYYY-MM-DD字符串、ISO字符串(含时间)
+     * @param {Date|string} dateVal
+     * @returns {string} YYYY-MM-DD
+     */
+    static formatDateForStorage(dateVal) {
+        if (!dateVal) return '';
+        // Date 对象
+        if (dateVal instanceof Date) {
+            return this.formatLocalDate(dateVal);
+        }
+        // 字符串
+        if (typeof dateVal === 'string') {
+            // 如果是 ISO 字符串，取前10位
+            if (dateVal.length >= 10 && dateVal.includes('T')) {
+                return dateVal.slice(0, 10);
+            }
+            // 如果是 YYYY-MM-DD 格式，直接返回规范化
+            const m = dateVal.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (m) {
+                const y = m[1];
+                const mm = String(parseInt(m[2], 10)).padStart(2, '0');
+                const dd = String(parseInt(m[3], 10)).padStart(2, '0');
+                return `${y}-${mm}-${dd}`;
+            }
+            // 其他情况尝试用 Date 解析
+            const d = new Date(dateVal);
+            if (!isNaN(d.getTime())) {
+                return this.formatLocalDate(d);
+            }
+            console.warn('[DateUtils] 无法规范化日期:', dateVal);
+            return '';
+        }
+        // 其他类型不支持
+        console.warn('[DateUtils] 非预期的日期类型:', typeof dateVal);
+        return '';
+    }
+    /**
      * 获取本地时区的YYYY-MM-DD格式日期字符串
      * @param {Date} date - 日期对象
      * @returns {string} YYYY-MM-DD格式的日期字符串

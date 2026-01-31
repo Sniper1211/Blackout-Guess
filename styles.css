@@ -27,6 +27,9 @@
     /* 字体栈优化 */
     --font-serif: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
     --font-sans: "PingFang SC", "Lantinghei SC", "Microsoft YaHei", sans-serif;
+    
+    /* 标点颜色（在浅色背景上更易辨识） */
+    --punctuation-color: #5f7a8e;
 }
 
 /* 暗色模式适配 */
@@ -46,6 +49,9 @@
         
         --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
         --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+        
+        /* 深色模式下的标点颜色（提升对比度） */
+        --punctuation-color: #9bb6c9;
     }
 }
 
@@ -308,7 +314,6 @@ input, textarea {
     color: white;
     box-shadow: 0 4px 8px rgba(47, 82, 143, 0.2);
     border-color: var(--primary-color);
-    animation: revealScale 0.4s ease-out;
 }
 
 .revealed-by-hint {
@@ -316,7 +321,6 @@ input, textarea {
     color: white;
     box-shadow: 0 4px 8px rgba(178, 34, 34, 0.2);
     border-color: var(--accent-color);
-    animation: revealScale 0.4s ease-out;
 }
 
 .revealed-auto {
@@ -327,10 +331,10 @@ input, textarea {
 
 .punctuation-char {
     background: transparent;
-    color: var(--text-color);
+    color: var(--punctuation-color);
     width: auto;
     min-width: 20px;
-    font-weight: normal;
+    font-weight: 600;
 }
 
 @keyframes revealScale {
@@ -338,6 +342,10 @@ input, textarea {
     100% { transform: scale(1); opacity: 1; }
 }
 
+/* 仅对“本次新揭示”的字符执行动画，避免历史已揭示字符重复闪烁 */
+.newly-guessed {
+    animation: revealScale 0.4s ease-out;
+}
 /* 侧边栏与布局 */
 .game-main-layout {
     display: flex;

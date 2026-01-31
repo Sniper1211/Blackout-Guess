@@ -177,4 +177,7 @@ if (typeof window !== 'undefined') {
     EnvUtils.init();
 }
 
-export default EnvUtils;
+// Node.js环境导出支持（用于测试）
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = EnvUtils;
+}

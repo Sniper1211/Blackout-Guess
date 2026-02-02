@@ -47,11 +47,21 @@
       </div>
       <div class="header-right">
         <span id="lastUpdated" class="last-updated">最后更新: --</span>
-        <button id="adminBtnLogin" class="btn btn-primary">Google 登录</button>
+        <button id="adminBtnLogout" class="btn btn-outline btn-sm" style="display:none">退出后台</button>
       </div>
     </header>
 
-    <div id="adminGate" class="gate-message">请登录管理员账号以访问后台系统</div>
+    <div id="adminGate" class="gate-message">
+      <div class="passphrase-container">
+        <h3>管理后台访问</h3>
+        <p>请输入后台操作口令以继续</p>
+        <div class="passphrase-input-group">
+          <input type="password" id="adminPassphrase" placeholder="输入访问口令..." class="form-control">
+          <button id="btnSubmitPassphrase" class="btn btn-primary">验证并进入</button>
+        </div>
+        <div id="passphraseError" class="error-text" style="display:none; color: var(--accent-color); margin-top: 10px;">口令错误，请重试</div>
+      </div>
+    </div>
 
     <div id="adminContent" class="content-container" style="display:none">
       

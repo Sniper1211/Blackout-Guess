@@ -1,9 +1,10 @@
 (() => {
   const state = {
     supabase: null,
-    user: null,
-    isAdmin: false,
+    isAuthorized: false,
     questions: [],
+    // ... 其他状态保持不变
+
     selectedId: null,
     selectedIds: new Set(),
     settings: { daily_mode_enabled: false },
@@ -30,7 +31,7 @@
     // 暴露给全局，方便控制台调试获取 ID
     window.supabaseClient = state.supabase;
 
-    bindAuth();
+    bindPassphraseAuth(); // 使用新的口令校验逻辑
     bindTabs();
     bindUI();
     
@@ -59,228 +60,64 @@
     return window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
   }
 
-  // --- 权限与认证 ---
-  function bindAuth() {
-    console.log('[Auth] 正在初始化认证监听...');
-    
-    state.supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`[Auth] 状态变更: ${event}`);
-      state.user = session?.user || null;
-      updateAuthUI();
-      
-      if (state.user) {
-        console.log('[Auth] 检测到用户登录:', state.user.email);
-        await checkAdmin();
-        if (state.isAdmin) {
-          console.log('[Auth] 管理员身份确认，开始加载数据...');
-          loadAppSettings();
-          loadDashboardData(); 
-          loadQuestions();
-          loadCalendarData();
-        }
-      } else {
-        console.log('[Auth] 用户未登录或已登出');
-        // 确保 UI 切换到登录提示状态
-        const gate = document.getElementById('adminGate');
-        const content = document.getElementById('adminContent');
-        if (gate && content) {
-            gate.style.display = 'block';
-            gate.textContent = '请登录管理员账号以访问后台系统';
-            gate.classList.remove('error');
-            content.style.display = 'none';
-        }
-      }
-    });
+  // --- 权限与认证 (口令流) ---
+  function bindPassphraseAuth() {
+    const PASSPHRASE_KEY = 'admin_passphrase_authorized';
+    const DEFAULT_PASSPHRASE = 'blackout888'; // 默认口令
 
-    // 处理登录回跳逻辑 (OAuth)
-    const handleAuthRedirect = async () => {
-        try {
-            const url = new URL(window.location.href);
-            const hash = url.hash;
-            const search = url.search;
-            
-            console.log('[Auth] 检查 URL 回跳参数...');
-            
-            // 1. 处理 PKCE (code exchange)
-            if (search.includes('code=')) {
-                console.log('[Auth] 检测到 code 参数，尝试交换会话...');
-                const code = url.searchParams.get('code');
-                if (code) {
-                    const { error } = await state.supabase.auth.exchangeCodeForSession(code);
-                    if (error) throw error;
-                    
-                    // 清理 URL 参数
-                    url.searchParams.delete('code');
-                    url.searchParams.delete('state');
-                    window.history.replaceState(null, '', url.pathname + url.search);
-                    console.log('[Auth] Code 交换成功');
-                }
-            }
-            
-            // 2. 处理哈希中的 token (隐式流)
-            if (hash.includes('access_token')) {
-                console.log('[Auth] 检测到 access_token 哈希，获取会话...');
-                const { data, error } = await state.supabase.auth.getSession();
-                if (error) throw error;
-                
-                if (data?.session) {
-                    // 清理哈希
-                    window.history.replaceState(null, '', url.pathname + url.search);
-                    console.log('[Auth] 哈希会话获取成功');
-                }
-            }
-            
-            // 3. 主动获取一次当前用户状态（补丁：防止 onAuthStateChange 触发不及时）
-            console.log('[Auth] 主动获取当前用户信息...');
-            const { data: { user }, error: userError } = await state.supabase.auth.getUser();
-            if (userError) {
-                // 如果是 401/Invalid JWT 等错误，不视为系统异常，仅表示未登录
-                console.log('[Auth] 匿名访问或会话失效');
-            }
-            
-            if (user) {
-                console.log('[Auth] 已识别到现有用户:', user.email);
-                state.user = user;
-                updateAuthUI();
-                await checkAdmin();
-            }
-        } catch (err) {
-            console.error('[Auth] 初始化过程发生异常:', err);
-            showToast('认证初始化失败，请尝试重新登录', 'error');
+    const gate = document.getElementById('adminGate');
+    const content = document.getElementById('adminContent');
+    const input = document.getElementById('adminPassphrase');
+    const btnSubmit = document.getElementById('btnSubmitPassphrase');
+    const btnLogout = document.getElementById('adminBtnLogout');
+    const errorMsg = document.getElementById('passphraseError');
+    const badge = document.getElementById('adminUserBadge');
+
+    const showAdminContent = () => {
+        state.isAuthorized = true;
+        if (gate) gate.style.display = 'none';
+        if (content) content.style.display = 'block';
+        if (btnLogout) btnLogout.style.display = 'block';
+        if (badge) badge.textContent = '管理员模式';
+        
+        // 加载数据
+        loadAppSettings();
+        loadDashboardData(); 
+        loadQuestions();
+        loadCalendarData();
+    };
+
+    const verifyPassphrase = () => {
+        const val = input.value.trim();
+        if (val === DEFAULT_PASSPHRASE) {
+            sessionStorage.setItem(PASSPHRASE_KEY, 'true');
+            showAdminContent();
+        } else {
+            if (errorMsg) errorMsg.style.display = 'block';
+            input.value = '';
+            input.focus();
         }
     };
 
-    handleAuthRedirect();
+    // 检查 SessionStorage 是否已授权
+    if (sessionStorage.getItem(PASSPHRASE_KEY) === 'true') {
+        showAdminContent();
+    }
 
-    // 登录按钮
-    document.getElementById('adminBtnLogin')?.addEventListener('click', async () => {
-      try {
-          const redirectTo = window.location.origin + window.location.pathname;
-          console.log('[Auth] 发起 Google 登录，重定向至:', redirectTo);
-          const { error } = await state.supabase.auth.signInWithOAuth({ 
-            provider: 'google', 
-            options: { redirectTo } 
-          });
-          if (error) throw error;
-      } catch (err) {
-          console.error('[Auth] 登录请求失败:', err);
-          showToast('无法启动登录流程', 'error');
-      }
+    // 绑定事件
+    btnSubmit?.addEventListener('click', verifyPassphrase);
+    input?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') verifyPassphrase();
     });
 
-    // 退出按钮
-    document.getElementById('adminBtnLogout')?.addEventListener('click', async () => {
-      try {
-        console.log('[Auth] 正在注销...');
-        await state.supabase.auth.signOut();
-      } catch (err) {
-        console.error('[Auth] 注销异常:', err);
-      } finally {
-        // 无论如何都清理本地存储并刷新
-        console.log('[Auth] 强制清理并刷新页面');
-        // 手动清理 Supabase 可能残留的 key (sb-*-auth-token)
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.includes('auth-token')) {
-                localStorage.removeItem(key);
-            }
-        }
+    btnLogout?.addEventListener('click', () => {
+        sessionStorage.removeItem(PASSPHRASE_KEY);
         window.location.reload();
-      }
     });
   }
 
-  async function checkAdmin() {
-    if (!state.supabase || !state.user) {
-        console.log('[Auth] checkAdmin 跳过: 未获取到用户或客户端');
-        return;
-    }
-    
-    console.log('[Auth] 正在验证管理员权限:', state.user.id, state.user.email);
-    const gate = document.getElementById('adminGate');
-    const content = document.getElementById('adminContent');
+  // 移除旧的 checkAdmin 和 updateAuthUI
 
-    // 1. 优先检查 JWT 载荷中的角色 (app_metadata 或 user_metadata)
-    // 这通常是 Supabase 管理员在 Auth 界面直接设置角色后的存放处
-    const metadataRole = state.user.app_metadata?.role || state.user.user_metadata?.role;
-    if (metadataRole === 'admin') {
-        console.log('[Auth] 通过元数据识别到管理员身份');
-        state.isAdmin = true;
-    }
-
-    // 2. 如果元数据没找到，再查询数据库表
-    if (!state.isAdmin) {
-        try {
-            // 同时尝试从两个表查询以提高兼容性
-            const [profileRes, adminRes] = await Promise.all([
-                state.supabase.from('user_profiles').select('role').eq('user_id', state.user.id).maybeSingle(),
-                state.supabase.from('admins').select('role').eq('auth_user_id', state.user.id).eq('is_active', true).maybeSingle()
-            ]);
-
-            if (profileRes.data?.role === 'admin' || adminRes.data?.role === 'admin') {
-                console.log('[Auth] 通过数据库表识别到管理员身份');
-                state.isAdmin = true;
-            } else {
-                if (profileRes.error) console.warn('[Auth] user_profiles 查询异常:', profileRes.error.message);
-                if (adminRes.error) console.warn('[Auth] admins 查询异常:', adminRes.error.message);
-            }
-        } catch (err) {
-            console.error('[Auth] 数据库权限检查发生崩溃:', err);
-        }
-    }
-
-    console.log('[Auth] 权限检查最终结果:', state.isAdmin ? '管理员' : '普通用户');
-    
-    if (state.isAdmin) {
-        if (gate) gate.style.display = 'none';
-        if (content) content.style.display = 'block';
-    } else {
-        if (gate) {
-            gate.innerHTML = `
-                <div style="color: var(--accent-color); font-weight: bold; margin-bottom: 15px;">
-                    权限不足：账号 ${state.user.email} 不是管理员。
-                </div>
-                <div style="font-size: 13px; color: #666; margin-bottom: 15px;">
-                    如果你已经在数据库中设置了权限，请尝试清除缓存或点击下方按钮重新同步。
-                </div>
-                <button onclick="window.location.reload()" class="btn btn-outline btn-sm">强制刷新页面</button>
-                <button id="btnRetryAuth" class="btn btn-primary btn-sm" style="margin-left:10px">重新检测权限</button>
-            `;
-            gate.classList.add('error');
-            gate.style.display = 'block';
-            
-            // 绑定重试按钮
-            document.getElementById('btnRetryAuth')?.addEventListener('click', async () => {
-                const btn = document.getElementById('btnRetryAuth');
-                btn.disabled = true;
-                btn.textContent = '检测中...';
-                await checkAdmin();
-                if (!state.isAdmin) {
-                    btn.disabled = false;
-                    btn.textContent = '重新检测权限';
-                    showToast('检测完成，权限状态未改变', 'info');
-                }
-            });
-        }
-        if (content) content.style.display = 'none';
-    }
-  }
-
-  function updateAuthUI() {
-    const badge = document.getElementById('adminUserBadge');
-    const btnLogin = document.getElementById('adminBtnLogin');
-    const btnLogout = document.getElementById('adminBtnLogout');
-    
-    if (state.user) {
-      badge.textContent = state.user.email;
-      btnLogin.style.display = 'none';
-      btnLogout.style.display = 'block';
-    } else {
-      badge.textContent = '未登录';
-      btnLogin.style.display = 'block';
-      btnLogout.style.display = 'none';
-    }
-  }
 
   // --- 仪表盘数据加载 ---
   async function loadDashboardData() {
@@ -290,7 +127,9 @@
   }
 
   async function loadDashboardStats() {
+    if (!state.supabase || !state.isAuthorized) return;
     try {
+
       // 诗词总数
       const { count: total } = await state.supabase
         .from('question_bank')
@@ -507,7 +346,7 @@
 
   // --- 题目管理逻辑 ---
   async function loadQuestions() {
-    if (!state.supabase || !state.isAdmin) return;
+    if (!state.supabase || !state.isAuthorized) return;
 
     const tbody = document.querySelector('#questionTable tbody');
     tbody.innerHTML = `
@@ -1087,7 +926,7 @@
 
   // --- 日历逻辑 ---
   async function loadCalendarData() {
-    if (!state.supabase || !state.isAdmin) return;
+    if (!state.supabase || !state.isAuthorized) return;
 
     const grid = document.getElementById('calendarGrid');
     const label = document.getElementById('calLabel');
@@ -1268,7 +1107,7 @@
   }
 
   async function loadAppSettings() {
-    if (!state.supabase || !state.isAdmin) return;
+    if (!state.supabase || !state.isAuthorized) return;
     
     const badge = document.getElementById('dailyModeBadge');
     badge.textContent = '加载中...';

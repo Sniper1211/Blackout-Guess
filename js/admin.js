@@ -61,120 +61,142 @@
 
   // --- 权限与认证 ---
   function bindAuth() {
-    state.supabase.auth.onAuthStateChange(async (_event, session) => {
+    console.log('[Auth] 正在初始化认证监听...');
+    
+    state.supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[Auth] 状态变更: ${event}`);
       state.user = session?.user || null;
       updateAuthUI();
+      
       if (state.user) {
+        console.log('[Auth] 检测到用户登录:', state.user.email);
         await checkAdmin();
         if (state.isAdmin) {
+          console.log('[Auth] 管理员身份确认，开始加载数据...');
           loadAppSettings();
-          loadDashboardData(); // 加载仪表盘数据
+          loadDashboardData(); 
           loadQuestions();
           loadCalendarData();
+        }
+      } else {
+        console.log('[Auth] 用户未登录或已登出');
+        // 确保 UI 切换到登录提示状态
+        const gate = document.getElementById('adminGate');
+        const content = document.getElementById('adminContent');
+        if (gate && content) {
+            gate.style.display = 'block';
+            gate.textContent = '请登录管理员账号以访问后台系统';
+            gate.classList.remove('error');
+            content.style.display = 'none';
         }
       }
     });
 
+    // 处理登录回跳逻辑 (OAuth)
+    const handleAuthRedirect = async () => {
+        try {
+            const url = new URL(window.location.href);
+            const hash = url.hash;
+            const search = url.search;
+            
+            console.log('[Auth] 检查 URL 回跳参数...');
+            
+            // 1. 处理 PKCE (code exchange)
+            if (search.includes('code=')) {
+                console.log('[Auth] 检测到 code 参数，尝试交换会话...');
+                const code = url.searchParams.get('code');
+                if (code) {
+                    const { error } = await state.supabase.auth.exchangeCodeForSession(code);
+                    if (error) throw error;
+                    
+                    // 清理 URL 参数
+                    url.searchParams.delete('code');
+                    url.searchParams.delete('state');
+                    window.history.replaceState(null, '', url.pathname + url.search);
+                    console.log('[Auth] Code 交换成功');
+                }
+            }
+            
+            // 2. 处理哈希中的 token (隐式流)
+            if (hash.includes('access_token')) {
+                console.log('[Auth] 检测到 access_token 哈希，获取会话...');
+                const { data, error } = await state.supabase.auth.getSession();
+                if (error) throw error;
+                
+                if (data?.session) {
+                    // 清理哈希
+                    window.history.replaceState(null, '', url.pathname + url.search);
+                    console.log('[Auth] 哈希会话获取成功');
+                }
+            }
+            
+            // 3. 主动获取一次当前用户状态（补丁：防止 onAuthStateChange 触发不及时）
+            console.log('[Auth] 主动获取当前用户信息...');
+            const { data: { user }, error: userError } = await state.supabase.auth.getUser();
+            if (userError) {
+                // 如果是 401/Invalid JWT 等错误，不视为系统异常，仅表示未登录
+                console.log('[Auth] 匿名访问或会话失效');
+            }
+            
+            if (user) {
+                console.log('[Auth] 已识别到现有用户:', user.email);
+                state.user = user;
+                updateAuthUI();
+                await checkAdmin();
+            }
+        } catch (err) {
+            console.error('[Auth] 初始化过程发生异常:', err);
+            showToast('认证初始化失败，请尝试重新登录', 'error');
+        }
+    };
+
+    handleAuthRedirect();
+
     // 登录按钮
     document.getElementById('adminBtnLogin')?.addEventListener('click', async () => {
-      const redirectTo = window.location.origin + window.location.pathname;
-      await state.supabase.auth.signInWithOAuth({ 
-        provider: 'google', 
-        options: { redirectTo } 
-      });
+      try {
+          const redirectTo = window.location.origin + window.location.pathname;
+          console.log('[Auth] 发起 Google 登录，重定向至:', redirectTo);
+          const { error } = await state.supabase.auth.signInWithOAuth({ 
+            provider: 'google', 
+            options: { redirectTo } 
+          });
+          if (error) throw error;
+      } catch (err) {
+          console.error('[Auth] 登录请求失败:', err);
+          showToast('无法启动登录流程', 'error');
+      }
     });
 
     // 退出按钮
     document.getElementById('adminBtnLogout')?.addEventListener('click', async () => {
-      await state.supabase.auth.signOut();
-      window.location.reload();
-    });
-
-    // 处理 OAuth 回跳的哈希并初始化当前登录状态
-    try {
-      const url = new URL(window.location.href);
-      const code = url.searchParams.get('code');
-      if (code) {
-        state.supabase.auth.exchangeCodeForSession({ code })
-          .then(({ data, error }) => {
-            if (!error) {
-              state.user = data?.session?.user || null;
-              updateAuthUI();
-              if (state.user) {
-                checkAdmin().then(() => {
-                  if (state.isAdmin) {
-                    loadAppSettings();
-                    loadDashboardData();
-                    loadQuestions();
-                    loadCalendarData();
-                  }
-                });
-              }
+      try {
+        console.log('[Auth] 正在注销...');
+        await state.supabase.auth.signOut();
+      } catch (err) {
+        console.error('[Auth] 注销异常:', err);
+      } finally {
+        // 无论如何都清理本地存储并刷新
+        console.log('[Auth] 强制清理并刷新页面');
+        // 手动清理 Supabase 可能残留的 key (sb-*-auth-token)
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.includes('auth-token')) {
+                localStorage.removeItem(key);
             }
-          })
-          .finally(() => {
-            try {
-              url.searchParams.delete('code');
-              url.searchParams.delete('state');
-              window.history.replaceState(null, document.title, url.toString());
-            } catch {}
-          });
-      } else {
-        const hash = window.location.hash || '';
-        const hasTokens = /access_token|refresh_token/i.test(hash);
-        if (hasTokens) {
-          state.supabase.auth.getSession()
-            .then(({ data, error }) => {
-              if (!error) {
-                state.user = data?.session?.user || null;
-                updateAuthUI();
-                if (state.user) {
-                  checkAdmin().then(() => {
-                    if (state.isAdmin) {
-                      loadAppSettings();
-                      loadDashboardData();
-                      loadQuestions();
-                      loadCalendarData();
-                    }
-                  });
-                }
-              }
-            })
-            .finally(() => {
-              try {
-                const u = new URL(window.location.href);
-                u.hash = '';
-                window.history.replaceState(null, document.title, u.toString());
-              } catch {}
-            });
-          return;
         }
-        // 没有哈希参数时，主动拉取当前用户
-        state.supabase.auth.getUser()
-          .then(({ data, error }) => {
-            if (!error) {
-              state.user = data?.user || null;
-              updateAuthUI();
-              if (state.user) {
-                checkAdmin().then(() => {
-                  if (state.isAdmin) {
-                    loadAppSettings();
-                    loadDashboardData();
-                    loadQuestions();
-                    loadCalendarData();
-                  }
-                });
-              }
-            }
-          })
-          .catch(() => {});
+        window.location.reload();
       }
-    } catch {}
+    });
   }
 
   async function checkAdmin() {
     if (!state.supabase || !state.user) return;
     
+    console.log('[Auth] 正在验证管理员权限:', state.user.id);
+    const gate = document.getElementById('adminGate');
+    const content = document.getElementById('adminContent');
+
     try {
       const { data, error } = await state.supabase
         .from('user_profiles')
@@ -185,28 +207,38 @@
       if (!error && data?.role === 'admin') {
         state.isAdmin = true;
       } else {
-        const { data: adminData } = await state.supabase
+        const { data: adminData, error: adminError } = await state.supabase
           .from('admins')
           .select('role')
           .eq('auth_user_id', state.user.id)
           .eq('is_active', true)
           .maybeSingle();
         
+        if (adminError) {
+            console.error('[Auth] 查询 admins 表失败:', adminError);
+        }
         state.isAdmin = adminData?.role === 'admin';
       }
 
-      const gate = document.getElementById('adminGate');
-      const content = document.getElementById('adminContent');
+      console.log('[Auth] 权限检查结果:', state.isAdmin ? '管理员' : '普通用户');
       
       if (state.isAdmin) {
-        gate.style.display = 'none';
-        content.style.display = 'block';
+        if (gate) gate.style.display = 'none';
+        if (content) content.style.display = 'block';
       } else {
-        gate.textContent = '权限不足：该账号不是管理员。';
-        gate.classList.add('error');
+        if (gate) {
+            gate.textContent = `权限不足：账号 ${state.user.email} 不是管理员。`;
+            gate.classList.add('error');
+            gate.style.display = 'block';
+        }
+        if (content) content.style.display = 'none';
       }
     } catch (err) {
-      console.error('权限检查异常:', err);
+      console.error('[Auth] 权限检查发生异常:', err);
+      if (gate) {
+          gate.textContent = '权限检查过程发生异常，请刷新重试。';
+          gate.classList.add('error');
+      }
     }
   }
 

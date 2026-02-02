@@ -191,54 +191,78 @@
   }
 
   async function checkAdmin() {
-    if (!state.supabase || !state.user) return;
+    if (!state.supabase || !state.user) {
+        console.log('[Auth] checkAdmin 跳过: 未获取到用户或客户端');
+        return;
+    }
     
-    console.log('[Auth] 正在验证管理员权限:', state.user.id);
+    console.log('[Auth] 正在验证管理员权限:', state.user.id, state.user.email);
     const gate = document.getElementById('adminGate');
     const content = document.getElementById('adminContent');
 
-    try {
-      const { data, error } = await state.supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('user_id', state.user.id)
-        .maybeSingle();
-
-      if (!error && data?.role === 'admin') {
+    // 1. 优先检查 JWT 载荷中的角色 (app_metadata 或 user_metadata)
+    // 这通常是 Supabase 管理员在 Auth 界面直接设置角色后的存放处
+    const metadataRole = state.user.app_metadata?.role || state.user.user_metadata?.role;
+    if (metadataRole === 'admin') {
+        console.log('[Auth] 通过元数据识别到管理员身份');
         state.isAdmin = true;
-      } else {
-        const { data: adminData, error: adminError } = await state.supabase
-          .from('admins')
-          .select('role')
-          .eq('auth_user_id', state.user.id)
-          .eq('is_active', true)
-          .maybeSingle();
-        
-        if (adminError) {
-            console.error('[Auth] 查询 admins 表失败:', adminError);
-        }
-        state.isAdmin = adminData?.role === 'admin';
-      }
+    }
 
-      console.log('[Auth] 权限检查结果:', state.isAdmin ? '管理员' : '普通用户');
-      
-      if (state.isAdmin) {
+    // 2. 如果元数据没找到，再查询数据库表
+    if (!state.isAdmin) {
+        try {
+            // 同时尝试从两个表查询以提高兼容性
+            const [profileRes, adminRes] = await Promise.all([
+                state.supabase.from('user_profiles').select('role').eq('user_id', state.user.id).maybeSingle(),
+                state.supabase.from('admins').select('role').eq('auth_user_id', state.user.id).eq('is_active', true).maybeSingle()
+            ]);
+
+            if (profileRes.data?.role === 'admin' || adminRes.data?.role === 'admin') {
+                console.log('[Auth] 通过数据库表识别到管理员身份');
+                state.isAdmin = true;
+            } else {
+                if (profileRes.error) console.warn('[Auth] user_profiles 查询异常:', profileRes.error.message);
+                if (adminRes.error) console.warn('[Auth] admins 查询异常:', adminRes.error.message);
+            }
+        } catch (err) {
+            console.error('[Auth] 数据库权限检查发生崩溃:', err);
+        }
+    }
+
+    console.log('[Auth] 权限检查最终结果:', state.isAdmin ? '管理员' : '普通用户');
+    
+    if (state.isAdmin) {
         if (gate) gate.style.display = 'none';
         if (content) content.style.display = 'block';
-      } else {
+    } else {
         if (gate) {
-            gate.textContent = `权限不足：账号 ${state.user.email} 不是管理员。`;
+            gate.innerHTML = `
+                <div style="color: var(--accent-color); font-weight: bold; margin-bottom: 15px;">
+                    权限不足：账号 ${state.user.email} 不是管理员。
+                </div>
+                <div style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                    如果你已经在数据库中设置了权限，请尝试清除缓存或点击下方按钮重新同步。
+                </div>
+                <button onclick="window.location.reload()" class="btn btn-outline btn-sm">强制刷新页面</button>
+                <button id="btnRetryAuth" class="btn btn-primary btn-sm" style="margin-left:10px">重新检测权限</button>
+            `;
             gate.classList.add('error');
             gate.style.display = 'block';
+            
+            // 绑定重试按钮
+            document.getElementById('btnRetryAuth')?.addEventListener('click', async () => {
+                const btn = document.getElementById('btnRetryAuth');
+                btn.disabled = true;
+                btn.textContent = '检测中...';
+                await checkAdmin();
+                if (!state.isAdmin) {
+                    btn.disabled = false;
+                    btn.textContent = '重新检测权限';
+                    showToast('检测完成，权限状态未改变', 'info');
+                }
+            });
         }
         if (content) content.style.display = 'none';
-      }
-    } catch (err) {
-      console.error('[Auth] 权限检查发生异常:', err);
-      if (gate) {
-          gate.textContent = '权限检查过程发生异常，请刷新重试。';
-          gate.classList.add('error');
-      }
     }
   }
 

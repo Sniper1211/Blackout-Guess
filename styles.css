@@ -834,8 +834,24 @@ input, textarea {
     border-color: #666666;
 }
 
+/* 选中日期的样式 */
+.calendar-date.selected {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(47, 82, 143, 0.4);
+}
+
+.calendar-date.selected .date-num {
+    font-weight: bold;
+}
+
+.calendar-date.selected .question-marker {
+    background-color: #fff; /* 选中状态下小圆点变为白色 */
+}
+
 /* 移动端适配 */
-@media (max-width: 768px) {
+@media (max-width: 600px) {
     .game-container {
         margin-top: 60px;
         width: 95%;

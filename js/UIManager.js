@@ -729,6 +729,10 @@ class UIManager {
         const questionMap = window.app.questionsMap || {};
         // 生产环境中不显示题目映射表详情
 
+        // 获取当前正在进行的游戏题目ID，用于高亮显示
+        const currentGameData = this.gameEngine.gameData && this.gameEngine.gameData[0];
+        const currentQuestionId = currentGameData ? currentGameData.id : null;
+
         this.elements.calendarGrid.innerHTML = '';
 
         // 添加星期表头 (一 二 三 四 五 六 日)
@@ -785,7 +789,13 @@ class UIManager {
             
             if (isToday) el.classList.add('today');
             if (isFuture) el.classList.add('future-date');
-            if (question) el.classList.add('has-question');
+            if (question) {
+                el.classList.add('has-question');
+                // 检查是否为当前选中的题目
+                if (currentQuestionId && String(question.id) === String(currentQuestionId)) {
+                    el.classList.add('selected');
+                }
+            }
 
             el.innerHTML = `<span class="date-num">${dDay}</span>`;
 

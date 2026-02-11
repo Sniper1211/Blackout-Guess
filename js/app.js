@@ -38,6 +38,35 @@ class App {
     }
 
     /**
+     * 处理题目数据：统一字段结构并确保标题拼接
+     * @param {Array} questions - 原始题目数组
+     * @returns {Array} 处理后的题目数组
+     */
+    processQuestions(questions) {
+        if (!Array.isArray(questions)) return [];
+        
+        return questions.map(r => {
+            let content = r.content || '';
+            const title = r.title || '未命名作品';
+            
+            // 强制检查并拼接标题：如果正文不以标题开头，则拼接
+            // 这样无论数据库是否清洗过，都能保证前端显示一致
+            if (!content.startsWith(title)) {
+                content = `${title}\n${content}`;
+            }
+            
+            return {
+                id: r.id, // 保留ID，用于日历选中状态比对
+                title,
+                content,
+                author: r.author || '',
+                dynasty: r.dynasty || '',
+                publish_date: r.publish_date // 保留发布日期
+            };
+        });
+    }
+
+    /**
      * 带超时的Supabase查询
      * @param {Function} queryFn - 查询函数
      * @param {number} timeoutMs - 超时时间（毫秒，默认8000）
@@ -302,18 +331,8 @@ class App {
             // 自由模式下：若取到多条，前端随机取 1 条即可
 
             // 仅使用与当前游戏类型匹配的题目（默认 poem）
-            const items = rows
-                .filter(r => (r.type || 'poem') === type)
-                .map(r => {
-                    const hasNewline = typeof r.content === 'string' && r.content.includes('\n');
-                    const content = hasNewline ? r.content : `${r.title}\n${r.content || ''}`;
-                    return {
-                        title: r.title || '未命名作品',
-                        content,
-                        author: r.author || '',
-                        dynasty: r.dynasty || ''
-                    };
-                });
+            const filteredRows = rows.filter(r => (r.type || 'poem') === type);
+            const items = this.processQuestions(filteredRows);
 
             if (items.length > 0) {
                 if (dailyMode) {
@@ -460,7 +479,8 @@ class App {
                 return [];
             }
 
-            return this.filterQuestions(data || []);
+            const filteredData = this.filterQuestions(data || []);
+            return this.processQuestions(filteredData);
         } catch (e) {
             console.warn('获取过往题目异常');
             return [];
@@ -508,7 +528,10 @@ class App {
                 return false;
             }
 
-            this.gameEngine.gameData = filteredData;
+            // 处理题目数据（拼接标题、映射字段）
+            const processedData = this.processQuestions(filteredData);
+            this.gameEngine.gameData = processedData;
+            
             if (this.uiManager && typeof this.uiManager.resetGame === 'function') {
                 this.uiManager.resetGame();
             } else {

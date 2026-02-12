@@ -51,9 +51,16 @@ class App {
             let content = r.content || '';
             const title = r.title || '未命名作品';
             
-            // 强制检查并拼接标题：如果正文不以标题开头，则拼接
-            // 这样无论数据库是否清洗过，都能保证前端显示一致
-            if (!content.startsWith(title)) {
+            // 强制检查并拼接标题：确保内容以 "标题 + 换行符" 开头
+            // 解决 edge case：如果内容是 "标题正文..." 而没有换行，之前会被误判为已包含标题
+            if (content.startsWith(title)) {
+                const afterTitle = content.slice(title.length);
+                // 检查标题后是否紧跟换行符（兼容 \n 或 \r\n）
+                // 如果标题后既没有换行符，且内容还没结束（即不仅仅是标题），则强制插入换行
+                if (afterTitle.length > 0 && !afterTitle.startsWith('\n') && !afterTitle.startsWith('\r\n')) {
+                     content = `${title}\n${afterTitle}`;
+                }
+            } else {
                 content = `${title}\n${content}`;
             }
             

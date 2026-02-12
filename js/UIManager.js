@@ -247,13 +247,16 @@ class UIManager {
         // 使用DocumentFragment提高性能
         const fragment = document.createDocumentFragment();
         let currentLine = document.createElement('div');
-        currentLine.className = 'text-line';
+        // 第一行默认为标题行，添加 title-line 类
+        let isFirstLine = true;
+        currentLine.className = 'text-line title-line';
         
         this.gameEngine.hiddenText.forEach((item, index) => {
             if (item.char === '\n') {
                 fragment.appendChild(currentLine);
                 currentLine = document.createElement('div');
-                currentLine.className = 'text-line';
+                currentLine.className = 'text-line'; // 后续行使用普通样式
+                isFirstLine = false;
                 return;
             }
 

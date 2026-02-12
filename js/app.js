@@ -350,11 +350,19 @@ class App {
                 }
                 return true;
             } else {
-                console.log('在线题库为空，暂无题库数据');
+                console.log('在线题库为空，使用本地备用数据');
+                // 对本地数据进行处理（拼接标题等）
+                if (this.gameEngine.gameData && this.gameEngine.gameData.length > 0) {
+                     this.gameEngine.gameData = this.processQuestions(this.gameEngine.gameData);
+                }
                 return false;
             }
         } catch (e) {
-            console.warn('加载题库异常：', e);
+            console.warn('加载题库异常，使用本地备用数据：', e);
+            // 对本地数据进行处理（拼接标题等）
+            if (this.gameEngine.gameData && this.gameEngine.gameData.length > 0) {
+                    this.gameEngine.gameData = this.processQuestions(this.gameEngine.gameData);
+            }
             return false;
         }
     }

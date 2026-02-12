@@ -729,9 +729,10 @@ class UIManager {
         const questionMap = window.app.questionsMap || {};
         // 生产环境中不显示题目映射表详情
 
-        // 获取当前正在进行的游戏题目ID，用于高亮显示
+        // 获取当前正在进行的游戏题目ID和标题，用于高亮显示
         const currentGameData = this.gameEngine.gameData && this.gameEngine.gameData[0];
         const currentQuestionId = currentGameData ? currentGameData.id : null;
+        const currentQuestionTitle = currentGameData ? currentGameData.title : null;
 
         this.elements.calendarGrid.innerHTML = '';
 
@@ -790,12 +791,15 @@ class UIManager {
             if (isToday) el.classList.add('today');
             if (isFuture) el.classList.add('future-date');
             if (question) {
-                el.classList.add('has-question');
-                // 检查是否为当前选中的题目
-                if (currentQuestionId && String(question.id) === String(currentQuestionId)) {
-                    el.classList.add('selected');
+                    el.classList.add('has-question');
+                    // 检查是否为当前选中的题目（优先匹配ID，如果ID不存在则尝试匹配标题）
+                    const isIdMatch = currentQuestionId && String(question.id) === String(currentQuestionId);
+                    const isTitleMatch = !currentQuestionId && currentQuestionTitle && question.title === currentQuestionTitle;
+                    
+                    if (isIdMatch || isTitleMatch) {
+                        el.classList.add('selected');
+                    }
                 }
-            }
 
             el.innerHTML = `<span class="date-num">${dDay}</span>`;
 

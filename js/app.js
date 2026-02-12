@@ -15,6 +15,8 @@ class App {
         // 缓存相关
         this.questionsMap = {}; // 存储所有已获取的题目，Key: publish_date (YYYY-MM-DD)
         this.loadedMonths = new Set(); // 存储已加载的月份，Key: YYYY-MM
+        
+        console.log('App initialized (v20260211-2)');
     }
 
     /**

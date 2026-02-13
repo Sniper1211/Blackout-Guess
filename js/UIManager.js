@@ -11,11 +11,10 @@ class UIManager {
         
         this.initElements();
         this.bindEvents();
-        this.loadTheme();
     }
 
     /**
-     * 初始化DOM元素引用
+     * 初始化UI元素引用
      */
     initElements() {
         this.elements = {
@@ -28,7 +27,6 @@ class UIManager {
             timer: document.getElementById('timer'),
             score: document.getElementById('score'),
 
-            themeToggle: document.getElementById('themeToggle'),
             hintButton: document.getElementById('hintButton'),
             guessButton: document.getElementById('guessButton'),
             loadingIndicator: document.getElementById('loadingIndicator'),
@@ -93,37 +91,10 @@ class UIManager {
         }
 
 
-        // 主题切换
-        if (this.elements.themeToggle) {
-            this.elements.themeToggle.addEventListener('click', () => {
-                this.toggleTheme();
-            });
-        }
-
         // 提示按钮
         if (this.elements.hintButton) {
             this.elements.hintButton.addEventListener('click', () => {
                 this.useHint();
-            });
-        }
-
-        // 音量控制
-        const volumeSlider = document.getElementById('volumeSlider');
-        if (volumeSlider) {
-            volumeSlider.addEventListener('input', (e) => {
-                if (window.app && window.app.audioManager) {
-                    window.app.audioManager.setVolume(parseFloat(e.target.value));
-                }
-            });
-        }
-
-        // 音效切换
-        const soundToggle = document.getElementById('soundToggle');
-        if (soundToggle) {
-            soundToggle.addEventListener('click', () => {
-                if (window.toggleSound) {
-                    window.toggleSound();
-                }
             });
         }
 
@@ -895,34 +866,8 @@ class UIManager {
     }
 
     /**
-     * 切换主题
+     * 更新日历高亮状态
      */
-    toggleTheme() {
-        document.body.classList.toggle('dark-theme');
-        
-        const isDarkTheme = document.body.classList.contains('dark-theme');
-        localStorage.setItem('darkTheme', isDarkTheme);
-        
-        if (this.elements.themeToggle) {
-            this.elements.themeToggle.textContent = isDarkTheme ? '🌞' : '🌙';
-        }
-        
-        // 添加主题切换动画
-        document.body.style.transition = 'background-color 0.3s ease, color 0.3s ease';
-    }
-
-    /**
-     * 加载主题设置
-     */
-    loadTheme() {
-        const isDarkTheme = localStorage.getItem('darkTheme') === 'true';
-        if (isDarkTheme) {
-            document.body.classList.add('dark-theme');
-            if (this.elements.themeToggle) {
-                this.elements.themeToggle.textContent = '🌞';
-            }
-        }
-    }
 
     /**
      * 重置游戏

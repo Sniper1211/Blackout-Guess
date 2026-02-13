@@ -855,6 +855,14 @@ class App {
         
         this.audioManager.setVolume(volume);
     }
+
+    /**
+     * 导出全局辅助函数
+     */
+    exposeGlobals() {
+        window.app = this;
+        window.DateUtils = window.DateUtils || DateUtils; // 确保DateUtils可用
+    }
 }
 
 // 创建全局应用实例

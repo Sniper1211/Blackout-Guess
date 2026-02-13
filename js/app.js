@@ -324,6 +324,13 @@ class App {
                 rows = Array.isArray(freeData) ? this.filterQuestions(freeData) : [];
             }
             // 回退逻辑（仅在每日模式时适用）：今天没有内容→取最近发布
+            // 如果rows有多条（数据库有重复排期），filterQuestions后可能仍有多条，
+            // 下面的逻辑（items.slice(0, 1)）已经确保只取第一条，但为了稳健性，我们在源头限制
+            if (dailyMode && rows.length > 1) {
+                console.warn(`[每日模式] 检测到今日 (${todayStr}) 存在 ${rows.length} 条重复排期，仅使用第一条`);
+                rows = [rows[0]];
+            }
+
             if (dailyMode && rows.length === 0) {
                 console.log('[每日模式] 今日无排期，尝试加载最近发布的题目');
                 const { data: latest, error: err2 } = await this.supabase

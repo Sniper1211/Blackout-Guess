@@ -51,11 +51,23 @@ class App {
             let content = r.content || '';
             const title = r.title || '未命名作品';
             
-            // 修复逻辑：
+            // 修复逻辑：智能检测标题
             // 只有当 content 明显不包含 title 时，才手动拼接 title
-            // 如果 content 已经以 title 开头（且后面紧跟换行或内容本身），我们信任数据库的原始内容，不做任何截断或插入
-            // 这样可以避免像《清明》这种题目被切断成 "清明\n时节雨纷纷" 的错误
-            if (!content.startsWith(title)) {
+            // 1. 如果 content 不以 title 开头 -> 肯定没标题，拼接
+            // 2. 如果 content 以 title 开头，但后面紧跟的不是换行符（说明 title 只是正文的一部分前缀，如《清明》）-> 拼接
+            // 3. 如果 content 以 title 开头，且后面紧跟换行符 -> 说明已有标题，保持原样
+            
+            let needsTitle = !content.startsWith(title);
+            if (!needsTitle) {
+                // 虽然以 title 开头，但检查后续字符
+                const nextChar = content[title.length];
+                // 如果后面还有内容且不是换行符，说明这只是正文的前缀，需要补标题
+                if (nextChar && nextChar !== '\n' && nextChar !== '\r') {
+                    needsTitle = true;
+                }
+            }
+
+            if (needsTitle) {
                 content = `${title}\n${content}`;
             }
             

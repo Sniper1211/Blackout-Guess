@@ -18,17 +18,24 @@ class DateUtils {
         }
         // 字符串
         if (typeof dateVal === 'string') {
-            // 如果是 ISO 字符串，取前10位
-            if (dateVal.length >= 10 && dateVal.includes('T')) {
+            // 如果是 ISO 字符串，尝试解析为 Date 以应用本地时区
+            // 解决时区问题：UTC字符串直接截取会导致东八区日期少一天
+            if (dateVal.includes('T')) {
+                const d = new Date(dateVal);
+                if (!isNaN(d.getTime())) {
+                    return this.formatLocalDate(d);
+                }
+                // 回退逻辑：如果解析失败，直接截取
                 return dateVal.slice(0, 10);
             }
-            // 如果是 YYYY-MM-DD 格式，直接返回规范化
-            const m = dateVal.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-            if (m) {
-                const y = m[1];
-                const mm = String(parseInt(m[2], 10)).padStart(2, '0');
-                const dd = String(parseInt(m[3], 10)).padStart(2, '0');
-                return `${y}-${mm}-${dd}`;
+            
+            // 尝试规范化 YYYY-MM-DD
+            const match = dateVal.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+            if (match) {
+                const y = match[1];
+                const m = match[2].padStart(2, '0');
+                const d = match[3].padStart(2, '0');
+                return `${y}-${m}-${d}`;
             }
             // 其他情况尝试用 Date 解析
             const d = new Date(dateVal);

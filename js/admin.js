@@ -53,11 +53,19 @@
   }
 
   function createClient() {
-    if (!window.supabase || !window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
-      showToast('缺少 Supabase 配置', 'error');
+    // 兼容检测：优先使用 window.supabase，如果不存在尝试全局 supabase
+    const supabaseLib = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
+
+    if (!supabaseLib || !window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+      console.error('Supabase 配置缺失:', {
+        hasLib: !!supabaseLib,
+        hasUrl: !!window.SUPABASE_URL,
+        hasKey: !!window.SUPABASE_ANON_KEY
+      });
+      showToast('缺少 Supabase 配置，请检查网络或刷新页面', 'error');
       return null;
     }
-    return window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    return supabaseLib.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
   }
 
   // --- 权限与认证 (口令流) ---

@@ -797,10 +797,14 @@ class UIManager {
                     el.classList.add('has-question');
                     // 检查是否为当前选中的题目（优先匹配ID，如果ID不存在则尝试匹配标题）
                     const isIdMatch = currentQuestionId && String(question.id) === String(currentQuestionId);
-                    const isTitleMatch = !currentQuestionId && currentQuestionTitle && question.title === currentQuestionTitle;
+                    // 增强标题匹配：忽略首尾空格
+                    const currentTitle = currentQuestionTitle ? String(currentQuestionTitle).trim() : '';
+                    const questionTitle = question.title ? String(question.title).trim() : '';
+                    const isTitleMatch = !currentQuestionId && currentTitle && currentTitle === questionTitle;
                     
                     if (isIdMatch || isTitleMatch) {
                         el.classList.add('selected');
+                        console.log(`[UI] 日历选中: ${dateStr}, 题目: ${questionTitle}, 匹配方式: ${isIdMatch ? 'ID' : 'Title'}`);
                     }
                 }
 

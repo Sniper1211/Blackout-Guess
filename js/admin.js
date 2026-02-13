@@ -964,9 +964,20 @@
     }
 
     try {
-      const startStr = start.toISOString().split('T')[0];
-      const end = new Date(state.calYear, state.calMonth + 1, 0);
-      const endStr = end.toISOString().split('T')[0];
+      // 使用 DateUtils 修复查询范围（避免时区偏差）
+      let startStr, endStr;
+      if (window.DateUtils) {
+          const range = window.DateUtils.getMonthRange(state.calYear, state.calMonth);
+          startStr = range.firstDay;
+          endStr = range.lastDay;
+      } else {
+          // 降级逻辑
+          const s = new Date(state.calYear, state.calMonth, 1);
+          const e = new Date(state.calYear, state.calMonth + 1, 0);
+          const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          startStr = fmt(s);
+          endStr = fmt(e);
+      }
 
       const { data, error } = await state.supabase
         .from('question_bank')
@@ -978,13 +989,16 @@
         throw new Error(error.message);
       }
 
-      // 按日期分组
+      // 按日期分组（标准化Key）
       state.calendarData = {};
       data.forEach(q => {
-        if (!state.calendarData[q.publish_date]) {
-          state.calendarData[q.publish_date] = [];
+        // 确保 key 是标准的 YYYY-MM-DD 格式
+        const dateKey = window.DateUtils ? window.DateUtils.formatDateForStorage(q.publish_date) : q.publish_date.split('T')[0];
+        
+        if (!state.calendarData[dateKey]) {
+          state.calendarData[dateKey] = [];
         }
-        state.calendarData[q.publish_date].push(q);
+        state.calendarData[dateKey].push(q);
       });
 
       renderCalendar();
@@ -1030,7 +1044,12 @@
 
     // 填充日期
     for (let d = 1; d <= totalDays; d++) {
-      const date = `${state.calYear}-${String(state.calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      let date;
+      if (window.DateUtils) {
+          date = window.DateUtils.formatLocalDate(new Date(state.calYear, state.calMonth, d));
+      } else {
+          date = `${state.calYear}-${String(state.calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      }
       const dayEl = document.createElement('div');
       dayEl.className = 'admin-calendar-day';
       if (date === todayStr) dayEl.classList.add('today');

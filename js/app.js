@@ -581,6 +581,12 @@ class App {
     }
 
     async getDailyModeEnabled() {
+        // 临时强制关闭每日模式，方便测试新题目
+        console.log('[测试模式] 强制关闭每日模式，启用自由模式');
+        return false;
+        
+        // 原代码（保留供恢复）
+        /*
         try {
             if (!this.supabase) return false;
             const { data, error } = await this.supabase
@@ -598,6 +604,7 @@ class App {
             console.warn('读取每日模式设置异常：', e);
             return false;
         }
+        */
     }
 
     async reportSession() {

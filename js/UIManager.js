@@ -490,10 +490,12 @@ class UIManager {
                         <span class="win-label">作品：</span>
                         <span class="win-value">《${game.title}》</span>
                     </div>
+                    ${game.author || game.dynasty ? `
                     <div class="win-item">
-                        <span class="win-label">作者：</span>
-                        <span class="win-value">${game.author} (${game.dynasty})</span>
+                        <span class="win-label">${game.author ? '作者：' : '来源：'}</span>
+                        <span class="win-value">${game.author ? `${game.author}${game.dynasty ? ` (${game.dynasty})` : ''}` : game.dynasty}</span>
                     </div>
+                    ` : ''}
                     <div class="win-item">
                         <span class="win-label">用时：</span>
                         <span class="win-value">${this.gameEngine.getFormattedTime()}</span>
@@ -849,7 +851,7 @@ class UIManager {
             item.innerHTML = `
                 <div class="history-info">
                     <div class="history-title">${q.title}</div>
-                    <div class="history-meta">${q.author} · ${q.dynasty}</div>
+                    ${q.author || q.dynasty ? `<div class="history-meta">${q.author ? q.author : ''}${q.author && q.dynasty ? ' · ' : ''}${q.dynasty ? q.dynasty : ''}</div>` : ''}
                 </div>
                 <div class="history-date">${q.publish_date || ''}</div>
             `;

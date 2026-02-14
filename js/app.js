@@ -353,9 +353,9 @@ class App {
             }
             // 自由模式下：若取到多条，前端随机取 1 条即可
 
-            // 仅使用与当前游戏类型匹配的题目（默认 poem）
-            const filteredRows = rows.filter(r => (r.type || 'poem') === type);
-            const items = this.processQuestions(filteredRows);
+            // 支持所有类型的题目（百科常识综合平台）
+            // 不再限制类型，允许加载 poem, encyclopedia, company, brand, person 等所有类型
+            const items = this.processQuestions(rows);
 
             if (items.length > 0) {
                 if (dailyMode) {

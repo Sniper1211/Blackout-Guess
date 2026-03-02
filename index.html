@@ -5,7 +5,7 @@
     <!-- 允许缩放，提升移动端可访问性 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>百科常识猜字游戏 | 练脑力与知识 | Blackout Guess</title>
-    <meta name="description" content="一个有趣的百科常识猜字游戏，涵盖诗词、历史、科技、人物等丰富知识。通过猜测被遮挡的汉字，还原经典文本，测试你的知识储备。">
+    <meta name="description" content="每日一猜：挑战你的百科知识！通过猜测被遮挡的汉字，还原诗词、历史、科技、人物等经典文本。测试知识储备，提升脑力，享受猜字乐趣。">
     <meta name="keywords" content="百科常识, 猜字游戏, 知识问答, 历史, 科技, 人物, 益智游戏, 在线游戏, Blackout Guess">
     <link rel="canonical" href="https://sniper1211.github.io/Blackout-Guess/">
 
@@ -14,7 +14,7 @@
 
     <!-- Open Graph -->
     <meta property="og:title" content="百科常识猜字游戏 | Blackout Guess">
-    <meta property="og:description" content="挑战你的知识储备！通过猜测被遮挡的汉字，还原历史、科技、人物等经典文本。">
+    <meta property="og:description" content="每日一猜：挑战你的百科知识！通过猜测被遮挡的汉字，还原诗词、历史、科技、人物等经典文本。测试知识储备，提升脑力，享受猜字乐趣。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://sniper1211.github.io/Blackout-Guess/">
     <meta property="og:image" content="https://sniper1211.github.io/Blackout-Guess/favicon.svg">
@@ -23,7 +23,7 @@
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="百科常识猜字游戏 | Blackout Guess">
-    <meta name="twitter:description" content="挑战你的知识储备！通过猜测被遮挡的汉字，还原历史、科技、人物等经典文本。">
+    <meta name="twitter:description" content="每日一猜：挑战你的百科知识！通过猜测被遮挡的汉字，还原诗词、历史、科技、人物等经典文本。测试知识储备，提升脑力，享受猜字乐趣。">
     <meta name="twitter:image" content="https://sniper1211.github.io/Blackout-Guess/favicon.svg">
 
     <link rel="stylesheet" href="styles.css?v=20260211-2">
@@ -77,11 +77,14 @@
         
         <div class="game-main-layout">
             <div class="game-primary-area">
+                <h2 class="visually-hidden">今日挑战题目</h2>
                 <div class="text-display" id="textDisplay" role="main" aria-label="诗词显示区域"></div>
             </div>
 
             <div class="game-sidebar">
+                <h2 class="visually-hidden">游戏控制面板</h2>
                 <div class="stats-container">
+                    <h3 class="stats-heading visually-hidden">游戏统计</h3>
                     <div class="stats-item">
                         <div class="stats-label">已猜测次数</div>
                         <div class="stats-value" id="guessCount">0</div>
@@ -96,6 +99,7 @@
                 </div>
                 
                 <div class="input-section">
+                    <h3 class="input-heading visually-hidden">猜测输入</h3>
                     <div class="input-group">
                         <input 
                             type="text" 
@@ -128,7 +132,7 @@
             <div class="win-content history-modal-content">
                 <button class="win-close-btn" id="closeHistoryBtn" aria-label="关闭">&times;</button>
                 <div class="modal-header">
-                    <h3 class="win-title" style="margin-bottom: 10px;">过往题目</h3>
+                    <h2 class="win-title" style="margin-bottom: 10px;">过往题目</h2>
                 </div>
                 <div class="modal-body history-container">
                     <div class="calendar-nav">

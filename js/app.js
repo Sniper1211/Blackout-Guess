@@ -815,9 +815,10 @@ class App {
         if (!this.isInitialized) return;
         
         const result = this.uiManager.handleGuess();
+        if (!result) return;
         
         // 播放音效
-        if (result && this.audioManager) {
+        if (this.audioManager) {
             if (result.success) {
                 this.audioManager.playSuccess();
             } else {
@@ -829,6 +830,11 @@ class App {
                     this.audioManager.playWin();
                 }, 500);
             }
+        }
+
+        // 游戏胜利，上报成绩
+        if (result.gameComplete) {
+            this.reportSession();
         }
     }
 

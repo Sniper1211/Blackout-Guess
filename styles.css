@@ -302,7 +302,7 @@ input, textarea {
 }
 
 .hidden-char {
-    background-color: #d1d5db; /* 加深未揭示字符背景 */
+    background-color: #345678; /* 用户指定颜色 */
     color: transparent;
     box-shadow: none;
     border-color: #9ca3af; /* 加深边框 */

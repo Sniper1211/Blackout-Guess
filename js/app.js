@@ -140,6 +140,13 @@ class App {
             // 初始化UI
             this.uiManager.init();
 
+            // 如果有题目，获取完成人数
+            if (this.gameEngine && this.gameEngine.currentGame) {
+                this.fetchCompletionCount(this.gameEngine.currentGame.title).then(count => {
+                    this.uiManager.updateCompletionCount(count);
+                });
+            }
+
             // 初始化设备ID
             try {
                 const existingId = localStorage.getItem('deviceId');
@@ -391,6 +398,31 @@ class App {
     }
 
     /**
+     * 获取题目完成人数（仅限登录用户）
+     */
+    async fetchCompletionCount(title) {
+        if (!this.supabase || !title) return 0;
+        
+        try {
+            // 使用 count 方法，head: true 只返回数量不返回数据
+            const { count, error } = await this.supabase
+                .from('game_sessions')
+                .select('*', { count: 'exact', head: true })
+                .eq('poem_title', title)
+                .not('user_id', 'is', null);
+                
+            if (error) {
+                console.warn('获取完成人数失败:', error.message);
+                return 0;
+            }
+            return count;
+        } catch (e) {
+            console.warn('获取完成人数异常:', e);
+            return 0;
+        }
+    }
+
+    /**
      * 获取过往题目列表
      */
     /**
@@ -571,6 +603,14 @@ class App {
                     this.uiManager.updateDisplay();
                 }
             }
+            
+            // 更新完成人数
+            if (this.gameEngine.currentGame) {
+                this.fetchCompletionCount(this.gameEngine.currentGame.title).then(count => {
+                    this.uiManager.updateCompletionCount(count);
+                });
+            }
+            
             this.hideLoadingIndicator();
             return true;
         } catch (e) {
@@ -636,6 +676,10 @@ class App {
                 console.log('成绩已上报');
                 if (this.uiManager) {
                     this.uiManager.showMessage('在线成绩已上报', 'success');
+                    // 刷新完成人数
+                    this.fetchCompletionCount(payload.poem_title).then(count => {
+                        this.uiManager.updateCompletionCount(count);
+                    });
                 }
             }
         } catch (e) {
@@ -809,15 +853,7 @@ class App {
         this.audioManager.playClick();
     }
 
-    /**
-     * 切换主题（供HTML调用）
-     */
-    toggleTheme() {
-        if (!this.isInitialized) return;
-        
-        this.uiManager.toggleTheme();
-        this.audioManager.playClick();
-    }
+
 
     /**
      * 使用提示（供HTML调用）
@@ -879,7 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.guessLetter = () => app.guessLetter();
 window.resetGame = () => app.resetGame();
 window.showHighScores = () => app.showHighScores();
-window.toggleTheme = () => app.toggleTheme();
+
 window.useHint = () => app.useHint();
 window.toggleSound = () => app.toggleSound();
 window.setVolume = (volume) => app.setVolume(volume);

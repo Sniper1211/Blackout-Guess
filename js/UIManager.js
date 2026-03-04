@@ -39,7 +39,8 @@ class UIManager {
             calendarGrid: document.getElementById('calendarGrid'),
             yearSelect: document.getElementById('yearSelect'),
             monthSelect: document.getElementById('monthSelect'),
-            toastContainer: document.getElementById('toastContainer')
+            toastContainer: document.getElementById('toastContainer'),
+            completionCount: document.getElementById('completionCount')
         };
         
         // 用于日历的状态
@@ -317,6 +318,15 @@ class UIManager {
         
         if (this.elements.timer) {
             this.elements.timer.textContent = this.gameEngine.getFormattedTime();
+        }
+    }
+
+    /**
+     * 更新完成人数
+     */
+    updateCompletionCount(count) {
+        if (this.elements.completionCount) {
+            this.elements.completionCount.textContent = count !== undefined ? count : '-';
         }
     }
 
@@ -629,35 +639,14 @@ class UIManager {
     }
 
     /**
-     * 应用历史弹窗主题（根据系统偏好或网站主题）
+     * 应用历史弹窗主题（已废弃，保持统一浅色主题）
      */
     applyHistoryModalTheme() {
+        // 移除暗色主题切换逻辑，保持单一配色
         const modalContent = document.querySelector('.history-modal-content');
-        if (!modalContent) return;
-        
-        // 方法1：检查系统暗色模式偏好
-        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
-        
-        // 方法2：检查网站是否应用了暗色主题（通过body类或CSS变量）
-        const isSiteDark = document.body.classList.contains('dark-mode') || 
-                          document.documentElement.classList.contains('dark-mode') ||
-                          getComputedStyle(document.documentElement).getPropertyValue('--background-color').includes('1a1a1a');
-        
-        // 如果系统偏好暗色或网站是暗色主题，则应用深色主题
-        if (prefersDarkScheme.matches || isSiteDark) {
-            modalContent.classList.add('dark-theme');
-        } else {
+        if (modalContent) {
             modalContent.classList.remove('dark-theme');
         }
-        
-        // 监听系统主题变化
-        prefersDarkScheme.addEventListener('change', (e) => {
-            if (e.matches) {
-                modalContent.classList.add('dark-theme');
-            } else {
-                modalContent.classList.remove('dark-theme');
-            }
-        });
     }
 
     /**

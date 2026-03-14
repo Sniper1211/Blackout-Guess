@@ -404,6 +404,7 @@ input, textarea {
         flex-direction: row;
         text-align: left;
         gap: 48px;
+        align-items: flex-start; /* 关键修复：防止子元素高度被撑满 */
     }
     .game-primary-area {
         flex: 1;
@@ -420,6 +421,8 @@ input, textarea {
     }
     .game-sidebar {
         width: 320px;
+        /* 防止侧边栏被主区域撑开高度 */
+        flex-shrink: 0; 
     }
 }
 

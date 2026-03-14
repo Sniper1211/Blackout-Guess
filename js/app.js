@@ -298,11 +298,13 @@ class App {
             const dailyMode = await this.getDailyModeEnabled();
 
             // 当每日模式开启：优先读取“今日已发布”的内容（每日一个）
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            const todayStr = `${yyyy}-${mm}-${dd}`;
+            const todayStr = window.DateUtils ? window.DateUtils.getTodayString() : (() => {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            })();
 
             const selectFields = 'id,type,title,content,author,dynasty,enabled,language,status,publish_date';
 
@@ -371,8 +373,11 @@ class App {
                     console.log(`[每日模式] 已加载今日题目`);
                 } else {
                     // 自由模式：使用日期作为种子进行伪随机选择，确保同一天刷新页面题目一致
-                    const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-                    const index = dateSeed % items.length;
+                // 使用DateUtils获取今日日期字符串，避免时区问题
+                const seedStr = window.DateUtils ? window.DateUtils.getTodayString() : todayStr;
+                const seedParts = seedStr.split('-').map(Number);
+                const dateSeed = seedParts[0] * 10000 + seedParts[1] * 100 + seedParts[2];
+                const index = dateSeed % items.length;
                     const pick = items[index];
                     
                     this.gameEngine.gameData = [pick];

@@ -181,6 +181,16 @@ class App {
     }
 
     /**
+     * 将核心方法暴露给全局，方便 UI 绑定
+     */
+    exposeGlobals() {
+        window.app = this;
+        window.guessLetter = () => this.guessLetter();
+        window.resetGame = () => this.resetGame();
+        window.useHint = () => this.useHint();
+    }
+
+    /**
      * 设置认证与登录登出按钮
      */
     setupAuth() {
@@ -852,7 +862,7 @@ class App {
             }
 
             // 游戏胜利，上报成绩（确保只上报一次）
-            console.log('guessLetter result:', result);
+            console.log('guessLetter evaluating completion:', result);
             
             // 关键修复：确保在重新计算分数或获取状态后，正确判断是否完成
             const isCompleted = result && (result.titleComplete || result.gameComplete || this.gameEngine.gameWon);
@@ -948,6 +958,8 @@ window.app = app;
 
 // DOM加载完成后初始化应用
 document.addEventListener('DOMContentLoaded', () => {
+    const app = new BlackoutGuessApp();
+    app.exposeGlobals();
     app.init();
 });
 

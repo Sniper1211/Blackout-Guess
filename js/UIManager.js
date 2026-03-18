@@ -58,7 +58,11 @@ class UIManager {
             // 键盘事件处理
             this.elements.letterInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter' && !isComposing) {
-                    this.handleGuess();
+                    if (window.app && typeof window.app.guessLetter === 'function') {
+                        window.app.guessLetter();
+                    } else {
+                        this.handleGuess();
+                    }
                 }
             });
 
@@ -91,6 +95,17 @@ class UIManager {
             });
         }
 
+
+        // 猜字按钮
+        if (this.elements.guessButton) {
+            this.elements.guessButton.addEventListener('click', () => {
+                if (window.app && typeof window.app.guessLetter === 'function') {
+                    window.app.guessLetter();
+                } else {
+                    this.handleGuess();
+                }
+            });
+        }
 
         // 提示按钮
         if (this.elements.hintButton) {

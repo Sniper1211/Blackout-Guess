@@ -624,9 +624,10 @@ class GameEngine {
             const finalScore = this.calculateScore();
             result.score = finalScore.total;
             result.scoreBreakdown = finalScore.breakdown;
+            console.log('GameEngine calculated final score (title complete):', finalScore);
         }
 
-        if (gameComplete) {
+        if (gameComplete && !this.gameWon) { // Prevent double trigger if title just completed
             console.log('Game Complete triggered in GameEngine');
             this.gameWon = true;
             result.gameComplete = true;
@@ -634,6 +635,7 @@ class GameEngine {
             const finalScore = this.calculateScore();
             result.score = finalScore.total;
             result.scoreBreakdown = finalScore.breakdown;
+            console.log('GameEngine calculated final score (game complete):', finalScore);
         }
 
         return result;

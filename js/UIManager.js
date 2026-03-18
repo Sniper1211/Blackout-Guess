@@ -400,6 +400,7 @@ class UIManager {
 
         try {
             if (result.titleComplete || result.gameComplete) {
+                console.log('UIManager triggering showWinMessage');
                 this.showWinMessage(result.scoreBreakdown);
             }
             
@@ -416,6 +417,7 @@ class UIManager {
                 this.elements.letterInput.focus();
             }, 100);
             
+            console.log('UIManager returning result:', result);
             return result;
         } catch (error) {
             console.error('Error in UIManager.handleGuess post-processing:', error);

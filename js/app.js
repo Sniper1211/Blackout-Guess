@@ -403,18 +403,18 @@ class App {
     }
 
     /**
-     * 获取题目完成人数（仅限登录用户）
+     * 获取题目完成人数（包括所有用户）
      */
     async fetchCompletionCount(title) {
         if (!this.supabase || !title) return 0;
         
         try {
             // 使用 count 方法，head: true 只返回数量不返回数据
+            // 移除 .not('user_id', 'is', null) 限制，统计所有完成人数
             const { count, error } = await this.supabase
                 .from('game_sessions')
                 .select('*', { count: 'exact', head: true })
-                .eq('poem_title', title)
-                .not('user_id', 'is', null);
+                .eq('poem_title', title);
                 
             if (error) {
                 console.warn('获取完成人数失败:', error.message);
@@ -688,11 +688,12 @@ class App {
                     this.uiManager.showMessage(`在线成绩上报失败：${error.message}`, 'error');
                 }
             } else {
-                console.log('成绩已上报');
+                console.log('成绩已上报，准备刷新人数...');
                 if (this.uiManager) {
                     this.uiManager.showMessage('在线成绩已上报', 'success');
                     // 刷新完成人数
                     this.fetchCompletionCount(payload.poem_title).then(count => {
+                        console.log('刷新人数完成:', count);
                         this.uiManager.updateCompletionCount(count);
                     });
                 }

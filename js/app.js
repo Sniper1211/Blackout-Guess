@@ -958,7 +958,6 @@ window.app = app;
 
 // DOM加载完成后初始化应用
 document.addEventListener('DOMContentLoaded', () => {
-    const app = new BlackoutGuessApp();
     app.exposeGlobals();
     app.init();
 });

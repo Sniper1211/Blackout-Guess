@@ -831,6 +831,7 @@ class App {
         if (!this.isInitialized) return;
         
         try {
+            console.log('--- guessLetter triggered ---');
             const result = this.uiManager.handleGuess();
             console.log('guessLetter returned result:', result);
             if (!result) return;
@@ -860,10 +861,11 @@ class App {
                 console.log('Triggering reportSession...', { titleComplete: result.titleComplete, gameComplete: result.gameComplete, gameWon: this.gameEngine.gameWon });
                 this.gameEngine._hasReported = true;
                 
-                // 使用 setTimeout 将上报逻辑放到下一个事件循环，避免被 UI 弹窗阻塞
-                setTimeout(() => {
-                    this.reportSession();
-                }, 100);
+                // 将上报直接暴露到全局作用域执行，彻底绕开可能阻塞的闭包
+                window.setTimeout(() => {
+                    console.log('Executing delayed reportSession...');
+                    this.reportSession().catch(e => console.error('reportSession error:', e));
+                }, 50);
             }
         } catch (error) {
             console.error('Error in app.guessLetter:', error);

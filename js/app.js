@@ -859,7 +859,11 @@ class App {
             if (isCompleted && !this.gameEngine._hasReported) {
                 console.log('Triggering reportSession...', { titleComplete: result.titleComplete, gameComplete: result.gameComplete, gameWon: this.gameEngine.gameWon });
                 this.gameEngine._hasReported = true;
-                this.reportSession();
+                
+                // 使用 setTimeout 将上报逻辑放到下一个事件循环，避免被 UI 弹窗阻塞
+                setTimeout(() => {
+                    this.reportSession();
+                }, 100);
             }
         } catch (error) {
             console.error('Error in app.guessLetter:', error);

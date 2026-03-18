@@ -647,7 +647,11 @@ class App {
 
     async reportSession() {
         try {
-            if (!this.supabase || !this.gameEngine || !this.gameEngine.currentGame) return;
+            console.log('准备上报成绩...');
+            if (!this.supabase || !this.gameEngine || !this.gameEngine.currentGame) {
+                console.warn('上报中断：环境未准备好', { hasSupabase: !!this.supabase, hasEngine: !!this.gameEngine, hasGame: !!this.gameEngine?.currentGame });
+                return;
+            }
             const ge = this.gameEngine;
             const g = ge.currentGame;
             const accuracy = ge.guessCount > 0 ? Math.round((ge.correctGuesses / ge.guessCount) * 100) : 100;
@@ -837,8 +841,11 @@ class App {
             }
         }
 
-        // 游戏胜利，上报成绩
-        if (result.gameComplete) {
+        // 游戏胜利，上报成绩（确保只上报一次）
+        // console.log('guessLetter result:', result);
+        if (result && (result.titleComplete || result.gameComplete) && !this.gameEngine._hasReported) {
+            console.log('Triggering reportSession...');
+            this.gameEngine._hasReported = true;
             this.reportSession();
         }
     }

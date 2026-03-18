@@ -455,6 +455,7 @@ class GameEngine {
         this.correctGuesses = 0; // 正确猜测数
         this.wrongGuesses = 0; // 错误猜测数
         this.hintCount = 0; // 使用提示次数
+        this._hasReported = false; // 防止重复上报标志
         this.scoreBreakdown = { // 分数明细
             base: 500,
             characters: 0,
@@ -612,6 +613,7 @@ class GameEngine {
         };
 
         if (titleComplete && !this.titleGuessedNotified) {
+            // console.log('Title Complete triggered in GameEngine');
             this.revealAllText();
             this.titleGuessedNotified = true;
             result.titleComplete = true;
@@ -625,6 +627,7 @@ class GameEngine {
         }
 
         if (gameComplete) {
+            // console.log('Game Complete triggered in GameEngine');
             this.gameWon = true;
             result.gameComplete = true;
             // 重新计算最终分数

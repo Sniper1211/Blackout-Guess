@@ -823,30 +823,35 @@ class App {
     guessLetter() {
         if (!this.isInitialized) return;
         
-        const result = this.uiManager.handleGuess();
-        if (!result) return;
-        
-        // 播放音效
-        if (this.audioManager) {
-            if (result.success) {
-                this.audioManager.playSuccess();
-            } else {
-                this.audioManager.playError();
-            }
+        try {
+            const result = this.uiManager.handleGuess();
+            console.log('guessLetter returned result:', result);
+            if (!result) return;
             
-            if (result.gameComplete) {
-                setTimeout(() => {
-                    this.audioManager.playWin();
-                }, 500);
+            // 播放音效
+            if (this.audioManager) {
+                if (result.success) {
+                    this.audioManager.playSuccess();
+                } else {
+                    this.audioManager.playError();
+                }
+                
+                if (result.gameComplete || result.titleComplete) {
+                    setTimeout(() => {
+                        this.audioManager.playWin();
+                    }, 500);
+                }
             }
-        }
 
-        // 游戏胜利，上报成绩（确保只上报一次）
-        // console.log('guessLetter result:', result);
-        if (result && (result.titleComplete || result.gameComplete) && !this.gameEngine._hasReported) {
-            console.log('Triggering reportSession...');
-            this.gameEngine._hasReported = true;
-            this.reportSession();
+            // 游戏胜利，上报成绩（确保只上报一次）
+            console.log('guessLetter result:', result);
+            if (result && (result.titleComplete || result.gameComplete) && !this.gameEngine._hasReported) {
+                console.log('Triggering reportSession...');
+                this.gameEngine._hasReported = true;
+                this.reportSession();
+            }
+        } catch (error) {
+            console.error('Error in app.guessLetter:', error);
         }
     }
 

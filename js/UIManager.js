@@ -396,24 +396,32 @@ class UIManager {
         this.elements.letterInput.value = '';
         this.updateDisplay(result.success ? result.foundPositions : []);
         
-        if (result.titleComplete || result.gameComplete) {
-            this.showWinMessage(result.scoreBreakdown);
+        console.log('UIManager handleGuess result before returning:', result);
+
+        try {
+            if (result.titleComplete || result.gameComplete) {
+                this.showWinMessage(result.scoreBreakdown);
+            }
+            
+            // 只有在游戏未结束且已开始计时的情况下才启动计时器
+            if (this.gameEngine.startTime > 0 && !this.gameEngine.gameWon) {
+                this.startTimer();
+            }
+            
+            // 保存游戏状态
+            this.saveGameState();
+            
+            // 重新聚焦输入框
+            setTimeout(() => {
+                this.elements.letterInput.focus();
+            }, 100);
+            
+            return result;
+        } catch (error) {
+            console.error('Error in UIManager.handleGuess post-processing:', error);
+            // 即使抛错，也返回 result，保证外层逻辑继续
+            return result;
         }
-        
-        // 只有在游戏未结束且已开始计时的情况下才启动计时器
-        if (this.gameEngine.startTime > 0 && !this.gameEngine.gameWon) {
-            this.startTimer();
-        }
-        
-        // 保存游戏状态
-        this.saveGameState();
-        
-        // 重新聚焦输入框
-        setTimeout(() => {
-            this.elements.letterInput.focus();
-        }, 100);
-        
-        return result;
     }
 
     /**

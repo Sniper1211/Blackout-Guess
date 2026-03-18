@@ -613,7 +613,7 @@ class GameEngine {
         };
 
         if (titleComplete && !this.titleGuessedNotified) {
-            // console.log('Title Complete triggered in GameEngine');
+            console.log('Title Complete triggered in GameEngine');
             this.revealAllText();
             this.titleGuessedNotified = true;
             result.titleComplete = true;
@@ -627,7 +627,7 @@ class GameEngine {
         }
 
         if (gameComplete) {
-            // console.log('Game Complete triggered in GameEngine');
+            console.log('Game Complete triggered in GameEngine');
             this.gameWon = true;
             result.gameComplete = true;
             // 重新计算最终分数

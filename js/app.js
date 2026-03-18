@@ -647,9 +647,15 @@ class App {
 
     async reportSession() {
         try {
-            console.log('准备上报成绩...');
+            console.log('准备上报成绩...', {
+                hasSupabase: !!this.supabase,
+                hasEngine: !!this.gameEngine,
+                hasGame: !!this.gameEngine?.currentGame,
+                gameTitle: this.gameEngine?.currentGame?.title
+            });
+            
             if (!this.supabase || !this.gameEngine || !this.gameEngine.currentGame) {
-                console.warn('上报中断：环境未准备好', { hasSupabase: !!this.supabase, hasEngine: !!this.gameEngine, hasGame: !!this.gameEngine?.currentGame });
+                console.warn('上报中断：环境未准备好');
                 return;
             }
             const ge = this.gameEngine;
@@ -845,8 +851,12 @@ class App {
 
             // 游戏胜利，上报成绩（确保只上报一次）
             console.log('guessLetter result:', result);
-            if (result && (result.titleComplete || result.gameComplete) && !this.gameEngine._hasReported) {
-                console.log('Triggering reportSession...');
+            
+            // 关键修复：确保在重新计算分数或获取状态后，正确判断是否完成
+            const isCompleted = result && (result.titleComplete || result.gameComplete || this.gameEngine.gameWon);
+            
+            if (isCompleted && !this.gameEngine._hasReported) {
+                console.log('Triggering reportSession...', { titleComplete: result.titleComplete, gameComplete: result.gameComplete, gameWon: this.gameEngine.gameWon });
                 this.gameEngine._hasReported = true;
                 this.reportSession();
             }

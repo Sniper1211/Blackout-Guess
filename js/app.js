@@ -620,8 +620,29 @@ class App {
                 }
             }
             
+            // 获取今天的日期字符串用于比较
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            
+            // 只有当加载的题目是今天的题目时，才重置 _hasReported 标志，并允许上报
+            // 如果是通过日历加载的过往题目，则将标志设为 true，彻底禁用上报
+            let isPastQuestion = false;
+            if (this.gameEngine.currentGame && this.gameEngine.currentGame.publish_date) {
+                // 将日期格式化为 YYYY-MM-DD 进行比较
+                const pubDate = new Date(this.gameEngine.currentGame.publish_date);
+                const pubDateStr = `${pubDate.getFullYear()}-${String(pubDate.getMonth() + 1).padStart(2, '0')}-${String(pubDate.getDate()).padStart(2, '0')}`;
+                
+                if (pubDateStr < todayStr) {
+                    isPastQuestion = true;
+                    console.log(`[过往题目] ${pubDateStr} < ${todayStr}，本局游戏将不会上报成绩`);
+                }
+            }
+
             // 更新完成人数
             if (this.gameEngine.currentGame) {
+                // 如果是过往题目，初始化时就直接锁死上报开关
+                this.gameEngine._hasReported = isPastQuestion;
+                
                 this.fetchCompletionCount(this.gameEngine.currentGame.title).then(count => {
                     this.uiManager.updateCompletionCount(count);
                 });
@@ -656,7 +677,7 @@ class App {
         }
     }
 
-    async reportSession() {
+    async reportSession(completedPoemTitle = null) {
         try {
             console.log('准备上报成绩...', {
                 hasSupabase: !!this.supabase,
@@ -671,6 +692,27 @@ class App {
             }
             const ge = this.gameEngine;
             const g = ge.currentGame;
+            
+            // 如果传递了完成时的题目名，验证它是否与当前题目匹配
+            // 这可以防止用户在旧题目完成的瞬间点击日历切换到新题目，导致将旧成绩算作新题目的成绩
+            const titleToReport = completedPoemTitle || g.title;
+            if (completedPoemTitle && completedPoemTitle !== g.title) {
+                console.warn(`上报被拦截：完成的题目(${completedPoemTitle})与当前题目(${g.title})不匹配。`);
+                return;
+            }
+            
+            // 防御性检查：确保不为过往题目上报
+            if (g.publish_date) {
+                const today = new Date();
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                const pubDate = new Date(g.publish_date);
+                const pubDateStr = `${pubDate.getFullYear()}-${String(pubDate.getMonth() + 1).padStart(2, '0')}-${String(pubDate.getDate()).padStart(2, '0')}`;
+                
+                if (pubDateStr < todayStr) {
+                    console.warn(`上报被拦截：这是过往题目(${pubDateStr})，只能上报今日(${todayStr})的成绩。`);
+                    return;
+                }
+            }
             const accuracy = ge.guessCount > 0 ? Math.round((ge.correctGuesses / ge.guessCount) * 100) : 100;
             const payload = {
                 device_id: this.deviceId,
@@ -693,15 +735,19 @@ class App {
                 created_at: new Date().toISOString()
             };
 
-            // 如果未登录，则不上报，直接返回
+            // 如果未登录，则不上报，直接返回，并且也更新一下当前题目的人数
             if (!payload.user_id) {
                 console.log('用户未登录，不记录完成成绩');
+                // 确保使用当前上报对象的标题，防止环境被篡改
+                this.fetchCompletionCount(payload.poem_title).then(count => {
+                    this.uiManager.updateCompletionCount(count);
+                });
                 return;
             }
 
             // 方案：使用 localStorage 记录该设备已经完成过的题目
             // 避免重复上报导致同一个用户刷人数
-            const completedKey = `completed_${g.title}`;
+            const completedKey = `completed_${payload.poem_title}`;
             if (localStorage.getItem(completedKey)) {
                 console.log('该题目已完成过，跳过上报以防止刷数据');
                 // 仍然刷新一下当前人数显示
@@ -894,10 +940,13 @@ class App {
                 console.log('Triggering reportSession...', { titleComplete: result.titleComplete, gameComplete: result.gameComplete, gameWon: this.gameEngine.gameWon });
                 this.gameEngine._hasReported = true;
                 
+                // 获取当前正在玩的题目，防止异步延迟导致题目被切换
+                const currentPoemTitle = this.gameEngine.currentGame?.title;
+                
                 // 将上报直接暴露到全局作用域执行，彻底绕开可能阻塞的闭包
                 window.setTimeout(() => {
                     console.log('Executing delayed reportSession...');
-                    this.reportSession().catch(e => console.error('reportSession error:', e));
+                    this.reportSession(currentPoemTitle).catch(e => console.error('reportSession error:', e));
                 }, 50);
             }
         } catch (error) {

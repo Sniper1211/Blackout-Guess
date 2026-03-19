@@ -413,18 +413,19 @@ class App {
     }
 
     /**
-     * 获取题目完成人数（包括所有用户）
+     * 获取题目完成人数（仅限登录用户）
      */
     async fetchCompletionCount(title) {
         if (!this.supabase || !title) return 0;
         
         try {
             // 使用 count 方法，head: true 只返回数量不返回数据
-            // 移除 .not('user_id', 'is', null) 限制，统计所有完成人数
+            // 恢复 .not('user_id', 'is', null) 限制，只统计登录用户的成绩
             const { count, error } = await this.supabase
                 .from('game_sessions')
                 .select('*', { count: 'exact', head: true })
-                .eq('poem_title', title);
+                .eq('poem_title', title)
+                .not('user_id', 'is', null);
                 
             if (error) {
                 console.warn('获取完成人数失败:', error.message);
@@ -691,6 +692,12 @@ class App {
                 accuracy,
                 created_at: new Date().toISOString()
             };
+
+            // 如果未登录，则不上报，直接返回
+            if (!payload.user_id) {
+                console.log('用户未登录，不记录完成成绩');
+                return;
+            }
 
             // 方案：使用 localStorage 记录该设备已经完成过的题目
             // 避免重复上报导致同一个用户刷人数

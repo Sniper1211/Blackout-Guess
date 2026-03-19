@@ -691,6 +691,19 @@ class App {
                 accuracy,
                 created_at: new Date().toISOString()
             };
+
+            // 方案：使用 localStorage 记录该设备已经完成过的题目
+            // 避免重复上报导致同一个用户刷人数
+            const completedKey = `completed_${g.title}`;
+            if (localStorage.getItem(completedKey)) {
+                console.log('该题目已完成过，跳过上报以防止刷数据');
+                // 仍然刷新一下当前人数显示
+                this.fetchCompletionCount(payload.poem_title).then(count => {
+                    this.uiManager.updateCompletionCount(count);
+                });
+                return;
+            }
+
             const { error } = await this.supabase.from('game_sessions').insert(payload);
             if (error) {
                 console.warn('上报成绩失败:', error.message);
@@ -699,6 +712,9 @@ class App {
                 }
             } else {
                 console.log('成绩已上报，准备刷新人数...');
+                // 上报成功后，在本地记录已完成状态
+                localStorage.setItem(completedKey, 'true');
+                
                 if (this.uiManager) {
                     this.uiManager.showMessage('在线成绩已上报', 'success');
                     // 刷新完成人数

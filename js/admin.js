@@ -478,8 +478,14 @@
     tbody.querySelectorAll('.row-select').forEach(cb => {
       cb.addEventListener('change', (e) => {
         const id = e.target.dataset.id;
-        if (e.target.checked) state.selectedIds.add(id);
-        else state.selectedIds.delete(id);
+        const row = e.target.closest('tr');
+        if (e.target.checked) {
+          state.selectedIds.add(id);
+          if (row) row.classList.add('selected');
+        } else {
+          state.selectedIds.delete(id);
+          if (row) row.classList.remove('selected');
+        }
         updateBulkActions();
       });
     });
@@ -585,7 +591,9 @@
     form.qLang.value = q.language || 'zh-CN';
     form.qEnabled.checked = q.enabled !== false;
     
-    document.getElementById('editModal').style.display = 'block';
+    const modal = document.getElementById('editModal');
+    modal.style.display = 'flex';
+    modal.classList.add('show');
   };
 
   window.previewQuestion = (id) => {
@@ -606,7 +614,9 @@
       <div style="margin-top: 20px; font-size: 14px; color: #888;">* 此为样式预览，不代表最终游戏逻辑</div>
     `;
     
-    document.getElementById('previewModal').style.display = 'block';
+    const modal = document.getElementById('previewModal');
+    modal.style.display = 'flex';
+    modal.classList.add('show');
   };
 
   window.deleteQuestion = async (id) => {
@@ -623,6 +633,7 @@
       showToast('删除成功', 'success');
       loadQuestions();
       loadCalendarData();
+      loadDashboardStats(); // 更新仪表盘统计
     }
   };
 
@@ -657,7 +668,9 @@
       state.selectedId = null;
       document.getElementById('modalTitle').textContent = '新增题目';
       document.getElementById('questionForm').reset();
-      document.getElementById('editModal').style.display = 'block';
+      const modal = document.getElementById('editModal');
+      modal.style.display = 'flex';
+      modal.classList.add('show');
     });
 
     // 表单提交
@@ -696,9 +709,12 @@
         showToast('保存失败: ' + error.message, 'error');
       } else {
         showToast('保存成功', 'success');
-        document.getElementById('editModal').style.display = 'none';
+        const modal = document.getElementById('editModal');
+        modal.style.display = 'none';
+        modal.classList.remove('show');
         loadQuestions();
         loadCalendarData();
+        loadDashboardStats(); // 更新仪表盘统计
       }
     });
 
@@ -708,8 +724,14 @@
       document.querySelectorAll('.row-select').forEach(cb => {
         cb.checked = checked;
         const id = cb.dataset.id;
-        if (checked) state.selectedIds.add(id);
-        else state.selectedIds.delete(id);
+        const row = cb.closest('tr');
+        if (checked) {
+          state.selectedIds.add(id);
+          if (row) row.classList.add('selected');
+        } else {
+          state.selectedIds.delete(id);
+          if (row) row.classList.remove('selected');
+        }
       });
       updateBulkActions();
     });
@@ -731,6 +753,7 @@
         state.selectedIds.clear();
         loadQuestions();
         loadCalendarData();
+        loadDashboardStats(); // 更新仪表盘统计
       }
     });
 
@@ -747,14 +770,17 @@
         state.selectedIds.clear();
         loadQuestions();
         loadCalendarData();
+        loadDashboardStats(); // 更新仪表盘统计
       }
     });
 
     // 模态窗关闭
     document.querySelectorAll('.close-modal').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.getElementById('editModal').style.display = 'none';
-        document.getElementById('previewModal').style.display = 'none';
+        document.querySelectorAll('.modal').forEach(m => {
+          m.style.display = 'none';
+          m.classList.remove('show');
+        });
       });
     });
 
@@ -762,6 +788,7 @@
     window.addEventListener('click', (e) => {
       if (e.target.classList.contains('modal')) {
         e.target.style.display = 'none';
+        e.target.classList.remove('show');
       }
     });
 
@@ -815,6 +842,7 @@
         showToast(`成功清理 ${toDelete.length} 条重复项`, 'success');
         loadQuestions();
         loadCalendarData();
+        loadDashboardStats(); // 更新仪表盘统计
       } catch (err) {
         showToast('清理失败: ' + err.message, 'error');
       }
@@ -845,7 +873,11 @@
         
         let startDate = new Date();
         if (lastOne?.[0]?.publish_date) {
-          startDate = new Date(lastOne[0].publish_date);
+          if (window.DateUtils) {
+            startDate = window.DateUtils.parseDatabaseDate(lastOne[0].publish_date);
+          } else {
+            startDate = new Date(lastOne[0].publish_date);
+          }
           startDate.setDate(startDate.getDate() + 1);
         }
 
@@ -853,7 +885,13 @@
         for (let i = 0; i < poems.length; i++) {
           const d = new Date(startDate);
           d.setDate(startDate.getDate() + i);
-          const dateStr = d.toISOString().split('T')[0];
+          
+          let dateStr;
+          if (window.DateUtils) {
+            dateStr = window.DateUtils.formatLocalDate(d);
+          } else {
+            dateStr = d.toISOString().split('T')[0];
+          }
           
           await state.supabase
             .from('question_bank')
@@ -864,6 +902,7 @@
         showToast('自动排期完成', 'success');
         loadQuestions();
         loadCalendarData();
+        loadDashboardStats(); // 更新仪表盘统计
       } catch (err) {
         showToast('操作异常: ' + err.message, 'error');
       }
@@ -1000,15 +1039,22 @@
       // 按日期分组（标准化Key）
       state.calendarData = {};
       data.forEach(q => {
-        // 确保 key 是标准的 YYYY-MM-DD 格式
-        const dateKey = window.DateUtils ? window.DateUtils.formatDateForStorage(q.publish_date) : q.publish_date.split('T')[0];
-        
-        if (!state.calendarData[dateKey]) {
-          state.calendarData[dateKey] = [];
+        // 兼容处理：Supabase 返回的日期可能带有 T 或者只是 YYYY-MM-DD
+        // 我们统一提取前10位作为 YYYY-MM-DD 的 key
+        let dateKey = null;
+        if (q.publish_date) {
+            dateKey = q.publish_date.split('T')[0].substring(0, 10);
         }
-        state.calendarData[dateKey].push(q);
+        
+        if (dateKey) {
+          if (!state.calendarData[dateKey]) {
+            state.calendarData[dateKey] = [];
+          }
+          state.calendarData[dateKey].push(q);
+        }
       });
 
+      console.log('Calendar data loaded:', { startStr, endStr, total: data.length, grouped: Object.keys(state.calendarData).length });
       renderCalendar();
     } catch (error) {
       console.error('日历加载失败:', error);
@@ -1052,28 +1098,38 @@
 
     // 填充日期
     for (let d = 1; d <= totalDays; d++) {
-      let date;
-      if (window.DateUtils) {
-          date = window.DateUtils.formatLocalDate(new Date(state.calYear, state.calMonth, d));
-      } else {
-          date = `${state.calYear}-${String(state.calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      }
+      // 保证渲染日历格子时的 date 字符串格式为严格的 YYYY-MM-DD
+      const year = state.calYear;
+      const month = String(state.calMonth + 1).padStart(2, '0');
+      const day = String(d).padStart(2, '0');
+      const date = `${year}-${month}-${day}`;
+      
       const dayEl = document.createElement('div');
       dayEl.className = 'admin-calendar-day';
       if (date === todayStr) dayEl.classList.add('today');
 
-      const questions = state.calendarData[date] || [];
+      // 尝试多种格式匹配以防万一
+      const questions = state.calendarData[date] || 
+                        state.calendarData[`${year}-${state.calMonth + 1}-${d}`] || 
+                        [];
       
       let questionsHtml = '';
       if (questions.length > 0) {
-        questionsHtml = questions.map(q => `
-          <div class="event-tag ${q.status}" title="${q.title} - ${q.author}">
-            <span class="event-title">${q.title}</span>
+        questionsHtml = questions.map(q => {
+          // 调试：打印每个格子的题目状态
+          // console.log(`Rendering ${date} ->`, q.title, q.status);
+          
+          // 容错处理：确保即使 status 丢失也有默认样式
+          const statusClass = q.status || 'draft';
+          
+          return `
+          <div class="event-tag ${statusClass}" title="${q.title || '未命名'} - ${q.author || '未知'}">
+            <span class="event-title">${q.title || '未命名'}</span>
             <span class="event-status">${getStatusLabel(q.status)}</span>
           </div>
-        `).join('');
+        `}).join('');
       } else {
-        questionsHtml = '<div class="no-event">无题目</div>';
+        questionsHtml = '<div class="no-event"></div>';
       }
 
       dayEl.innerHTML = `
@@ -1110,28 +1166,10 @@
     document.getElementById('modalTitle').textContent = `新增题目 (${date})`;
     document.getElementById('questionForm').reset();
     document.getElementById('questionForm').qPublishDate.value = date;
-    document.getElementById('editModal').style.display = 'block';
+    const modal = document.getElementById('editModal');
+    modal.style.display = 'flex';
+    modal.classList.add('show');
   };
-
-  function showDayDetails(date, questions) {
-    const panel = document.getElementById('calendarDayDetails');
-    const label = document.getElementById('selectedDateLabel');
-    const list = document.getElementById('dayQuestionsList');
-    
-    panel.style.display = 'block';
-    label.textContent = date;
-    
-    if (questions.length === 0) {
-      list.innerHTML = '<p style="opacity:0.6">当天无排期</p>';
-    } else {
-      list.innerHTML = questions.map(q => `
-        <div class="day-q-item" style="padding: 8px; border-bottom: 1px solid #eee; display:flex; justify-content: space-between; align-items:center;">
-          <span>${q.title} <small class="status-badge status-${q.status}">${getStatusLabel(q.status)}</small></span>
-          <button class="btn btn-sm" onclick="editQuestion(${q.id})">编辑</button>
-        </div>
-      `).join('');
-    }
-  }
 
   async function loadAppSettings() {
     if (!state.supabase || !state.isAuthorized) return;

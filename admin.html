@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>管理员后台 | Blackout Guess</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260211-2">
+  <link rel="stylesheet" href="styles.css?v=20260211-9">
   <meta name="robots" content="noindex">
   <!-- 引入 Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -144,8 +144,23 @@
                 <option value="scheduled">已排期</option>
                 <option value="published">已发布</option>
               </select>
+              <label style="margin-left: 10px;">每页：</label>
+              <select id="pageSize">
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
             </div>
             <span class="mono" id="totalCount">共：0 条</span>
+          </div>
+
+          <!-- 批量操作栏 -->
+          <div id="bulkActions" class="bulk-actions" style="display: none;">
+            <span id="bulkCount" style="margin-right: 15px;">已选中：0</span>
+            <input type="date" id="bulkPublishDate" class="form-control" style="margin-right: 10px; width: auto; display: inline-block;">
+            <button id="btnBulkSchedule" class="btn btn-amber btn-sm">批量排期</button>
+            <button id="btnBulkPublish" class="btn btn-primary btn-sm" style="margin-left: 10px;">批量发布</button>
           </div>
 
           <div class="table-responsive">
@@ -280,6 +295,19 @@
     </div>
   </div>
 
+  <!-- 预览模态窗 -->
+  <div id="previewModal" class="modal">
+    <div class="modal-content admin-modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3>题目预览</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 24px; background: #f5f5f5;">
+        <div id="previewGameArea"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="toastContainer" class="toast-container"></div>
 
   <script>
@@ -287,8 +315,8 @@
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlam9xdnltdXB6aHRteGp4cXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NjY2MDEsImV4cCI6MjA3NzE0MjYwMX0.zM4iRiii069JHKZdZnmxtJIQP1Rapax-fpEwb-R5pVo';
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="js/utils.js?v=20260211-2"></script>
-  <script src="js/env.js?v=20260211-2"></script>
-  <script src="js/admin.js?v=20260211-2"></script>
+  <script src="js/utils.js?v=20260211-9"></script>
+  <script src="js/env.js?v=20260211-9"></script>
+  <script src="js/admin.js?v=20260211-9"></script>
 </body>
 </html>

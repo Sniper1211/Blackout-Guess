@@ -197,8 +197,7 @@ class App {
         if (!this.supabase) return;
 
         const btnLogin = document.getElementById('btnLogin');
-        const btnLogout = document.getElementById('btnLogout');
-        const userBadge = document.getElementById('userBadge');
+        const userName = document.getElementById('authUserName');
 
         const getDisplayName = (user) => {
             try {
@@ -214,11 +213,15 @@ class App {
         };
 
         const updateUI = (user) => {
-            if (userBadge) {
-                userBadge.textContent = user ? `已登录：${getDisplayName(user)}` : '未登录';
+            if (!btnLogin) return;
+
+            const name = user ? getDisplayName(user) : '';
+            if (userName) {
+                userName.textContent = name;
+                userName.style.display = user ? 'inline' : 'none';
             }
-            if (btnLogin) btnLogin.style.display = user ? 'none' : 'inline-block';
-            if (btnLogout) btnLogout.style.display = user ? 'inline-block' : 'none';
+
+            btnLogin.setAttribute('aria-label', user ? `已登录：${name}，点击退出登录` : '使用 Google 登录');
         };
 
         // 处理 OAuth 回跳的哈希参数，确保解析会话并清理长哈希（避免误触发404页面）
@@ -265,32 +268,27 @@ class App {
         if (btnLogin) {
             btnLogin.addEventListener('click', async () => {
                 try {
-                    // 动态获取当前页面的完整 URL 作为重定向地址
-                    // 确保在本地测试时跳回 localhost，在线测试时跳回线上地址
+                    if (this.user) {
+                        await this.supabase.auth.signOut();
+                        this.user = null;
+                        updateUI(null);
+                        return;
+                    }
+
                     const redirectTo = window.location.origin + window.location.pathname;
                     console.log('发起登录，重定向至:', redirectTo);
-                    
+
                     await this.supabase.auth.signInWithOAuth({
                         provider: 'google',
-                        options: {
-                            redirectTo: redirectTo
-                        }
+                        options: { redirectTo }
                     });
                 } catch (e) {
-                    console.warn('发起登录失败:', e);
-                    this.showError('登录失败，请稍后重试');
-                }
-            });
-        }
-
-        if (btnLogout) {
-            btnLogout.addEventListener('click', async () => {
-                try {
-                    await this.supabase.auth.signOut();
-                    this.user = null;
-                    updateUI(null);
-                } catch (e) {
-                    console.warn('退出登录失败:', e);
+                    if (this.user) {
+                        console.warn('退出登录失败:', e);
+                    } else {
+                        console.warn('发起登录失败:', e);
+                        this.showError('登录失败，请稍后重试');
+                    }
                 }
             });
         }

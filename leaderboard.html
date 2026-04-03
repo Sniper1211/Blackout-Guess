@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>排行榜 | 古诗词猜字游戏</title>
-  <meta name="description" content="古诗词猜字游戏排行榜，查看最高分与最佳连击记录。" />
+  <title>古诗词猜字游戏排行榜 - Blackout Guess</title>
+  <meta name="description" content="查看古诗词猜字游戏排行榜：按分数排序的通关记录、用时与猜测次数，快速找到最高分玩家。" />
+  <meta name="keywords" content="古诗词猜字游戏排行榜, 最高分, 通关记录, 每日一题, Blackout Guess" />
   <link rel="canonical" href="https://sniper1211.github.io/Blackout-Guess/leaderboard.html" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta property="og:title" content="排行榜 | 古诗词猜字游戏" />
@@ -12,6 +13,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://sniper1211.github.io/Blackout-Guess/leaderboard.html" />
   <meta property="og:image" content="https://sniper1211.github.io/Blackout-Guess/favicon.svg" />
+  <meta property="og:image:alt" content="古诗词猜字游戏 Blackout Guess 图标" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="stylesheet" href="styles.css?v=20260211-2" />
   <!-- Google Analytics 配置与初始化 -->
@@ -28,12 +30,24 @@
   <main>
   <div class="page-container">
     <div class="page-header">
-      <div class="page-title">🏆 最高分排行榜</div>
+      <div>
+        <h1 class="page-title">古诗词猜字游戏排行榜：最高分与通关用时</h1>
+        <p style="margin:10px 0 0; color: var(--text-light); font-size: 14px;">在古诗词猜字游戏排行榜中，查看最新通关记录并对比分数、猜测次数与用时。</p>
+      </div>
       <div class="page-actions">
         <button id="btnRefresh" class="btn btn-outline">刷新</button>
         <a href="index.html" id="btnBack" class="btn">返回游戏</a>
         <a href="help.html" class="btn">游戏说明</a>
       </div>
+    </div>
+
+    <div class="help-section">
+      <h2>如何进入古诗词猜字游戏排行榜？</h2>
+      <p>完成一局古诗词猜字游戏后，系统会记录你的分数与用时。打开本页即可查看全站最高分排行榜。</p>
+    </div>
+    <div class="help-section">
+      <h2>排行榜分数如何计算？</h2>
+      <p>排行榜按分数从高到低排序；当分数相同，会参考提交时间作为排序条件。</p>
     </div>
 
     <div id="lbStatus" class="lb-loading">正在加载排行榜…</div>

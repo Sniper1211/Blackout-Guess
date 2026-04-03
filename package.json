@@ -1,0 +1,28 @@
+{
+  "name": "blackout-guess",
+  "version": "1.0.0",
+  "description": "一个优雅的古诗词猜字游戏，通过猜测汉字来完成经典古诗词。",
+  "main": "import_shici.js",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.3",
+    "iceberg-js": "^0.8.1",
+    "tslib": "^2.8.1",
+    "undici-types": "^7.18.2",
+    "ws": "^8.19.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sniper1211/Blackout-Guess.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Sniper1211/Blackout-Guess/issues"
+  },
+  "homepage": "https://github.com/Sniper1211/Blackout-Guess#readme"
+}

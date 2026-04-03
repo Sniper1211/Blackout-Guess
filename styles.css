@@ -941,6 +941,44 @@ input, textarea {
     border: 1px solid var(--border-color);
 }
 
+.seo-content-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.seo-toggle {
+    flex: 0 0 auto;
+    background: #fafafa;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.seo-toggle:hover {
+    background: #f3f4f6;
+}
+
+.seo-content-body {
+    margin-top: 8px;
+    overflow: hidden;
+    max-height: 600px;
+    opacity: 1;
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+
+.seo-content--collapsible.is-collapsed .seo-content-body {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+}
+
 .seo-content h2 {
     font-size: 18px;
     color: var(--text-color);

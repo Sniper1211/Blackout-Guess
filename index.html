@@ -162,12 +162,19 @@
             </div>
         </div>
 
-        <section class="seo-content" aria-label="古诗词猜字游戏介绍">
-            <h2>古诗词猜字游戏怎么玩：规则、提示与每日一题</h2>
-            <h3>如何通过古诗词猜字游戏还原整首诗？</h3>
-            <p>在古诗词猜字游戏中，你输入一个汉字，系统会把该字在诗句中的位置显示出来。把诗句还原完整即可通关。</p>
-            <h3>每日一题古诗词从哪里来？</h3>
-            <p>每日一题来自题库自动排期：每天固定一首诗词，你可以通过历史题目日历查看过往日期的题目与作者信息。</p>
+        <section class="seo-content seo-content--collapsible is-collapsed" aria-label="古诗词猜字游戏介绍">
+            <div class="seo-content-head">
+                <h2 id="seoIntroHeading">古诗词猜字游戏怎么玩：规则、提示与每日一题</h2>
+                <button id="seoIntroToggle" class="seo-toggle" type="button" aria-controls="seoIntroBody" aria-expanded="false">
+                    <span class="seo-toggle-text">展开</span>
+                </button>
+            </div>
+            <div id="seoIntroBody" class="seo-content-body">
+                <h3>如何通过古诗词猜字游戏还原整首诗？</h3>
+                <p>在古诗词猜字游戏中，你输入一个汉字，系统会把该字在诗句中的位置显示出来。把诗句还原完整即可通关。</p>
+                <h3>每日一题古诗词从哪里来？</h3>
+                <p>每日一题来自题库自动排期：每天固定一首诗词，你可以通过历史题目日历查看过往日期的题目与作者信息。</p>
+            </div>
         </section>
     </main>
 
@@ -195,6 +202,28 @@
     <script src="js/UIManager.js?v=20260211-2"></script>
     <script src="js/AudioManager.js?v=20260211-2"></script>
     <script src="js/app.js?v=20260211-2"></script>
+    <script>
+        (function () {
+            const section = document.querySelector('.seo-content--collapsible');
+            const btn = document.getElementById('seoIntroToggle');
+            const body = document.getElementById('seoIntroBody');
+            if (!section || !btn || !body) return;
+
+            const sync = () => {
+                const expanded = !section.classList.contains('is-collapsed');
+                btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+                const textEl = btn.querySelector('.seo-toggle-text');
+                if (textEl) textEl.textContent = expanded ? '收起' : '展开';
+            };
+
+            btn.addEventListener('click', () => {
+                section.classList.toggle('is-collapsed');
+                sync();
+            });
+
+            sync();
+        })();
+    </script>
     
     <!-- Google Analytics 配置与初始化 -->
     <script src="js/ga-config.js?v=20260211-2"></script>

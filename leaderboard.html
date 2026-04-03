@@ -3,16 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>排行榜 | 古诗词猜字游戏</title>
-  <meta name="description" content="古诗词猜字游戏排行榜，查看最高分与最佳连击记录。" />
+  <title>古诗词猜字游戏排行榜：每日一题最高分、用时与猜测次数 - Blackout Guess</title>
+  <meta name="description" content="Compare 古诗词猜字游戏排行榜：查看每日一题最高分、用时与猜测次数，按分数排序对比玩家表现。每条记录包含作品标题、作者朝代与完成时间；登录后自动上传你的通关数据。想复盘题目可用历史题目日历回看，随时回到首页继续挑战。免费开始。手机电脑直接玩，无需下载，适合背诗默写练习。每天 3 分钟。" />
+  <meta name="keywords" content="古诗词猜字游戏排行榜, 最高分, 通关记录, 每日一题, Blackout Guess" />
   <link rel="canonical" href="https://sniper1211.github.io/Blackout-Guess/leaderboard.html" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <meta property="og:title" content="排行榜 | 古诗词猜字游戏" />
-  <meta property="og:description" content="查看最高分与最佳连击记录，挑战更高分数。" />
+  <meta property="og:title" content="古诗词猜字游戏排行榜：每日一题最高分、用时与猜测次数 - Blackout Guess" />
+  <meta property="og:description" content="Compare 古诗词猜字游戏排行榜：查看每日一题最高分、用时与猜测次数，按分数排序对比玩家表现。每条记录包含作品标题、作者朝代与完成时间；登录后自动上传你的通关数据。想复盘题目可用历史题目日历回看，随时回到首页继续挑战。免费开始。手机电脑直接玩，无需下载，适合背诗默写练习。每天 3 分钟。" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://sniper1211.github.io/Blackout-Guess/leaderboard.html" />
   <meta property="og:image" content="https://sniper1211.github.io/Blackout-Guess/favicon.svg" />
+  <meta property="og:image:alt" content="古诗词猜字游戏 Blackout Guess 图标" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="古诗词猜字游戏排行榜：每日一题最高分、用时与猜测次数 - Blackout Guess" />
+  <meta name="twitter:description" content="Compare 古诗词猜字游戏排行榜：查看每日一题最高分、用时与猜测次数，按分数排序对比玩家表现。每条记录包含作品标题、作者朝代与完成时间；登录后自动上传你的通关数据。想复盘题目可用历史题目日历回看，随时回到首页继续挑战。免费开始。手机电脑直接玩，无需下载，适合背诗默写练习。每天 3 分钟。" />
   <link rel="stylesheet" href="styles.css?v=20260211-2" />
   <!-- Google Analytics 配置与初始化 -->
   <script src="js/ga-config.js"></script>
@@ -28,12 +32,24 @@
   <main>
   <div class="page-container">
     <div class="page-header">
-      <div class="page-title">🏆 最高分排行榜</div>
+      <div>
+        <h1 class="page-title">古诗词猜字游戏排行榜：最高分与通关用时</h1>
+        <p style="margin:10px 0 0; color: var(--text-light); font-size: 14px;">在古诗词猜字游戏排行榜中，查看最新通关记录并对比分数、猜测次数与用时。</p>
+      </div>
       <div class="page-actions">
         <button id="btnRefresh" class="btn btn-outline">刷新</button>
         <a href="index.html" id="btnBack" class="btn">返回游戏</a>
         <a href="help.html" class="btn">游戏说明</a>
       </div>
+    </div>
+
+    <div class="help-section">
+      <h2>如何进入古诗词猜字游戏排行榜？</h2>
+      <p>完成一局古诗词猜字游戏后，系统会记录你的分数与用时。打开本页即可查看全站最高分排行榜。</p>
+    </div>
+    <div class="help-section">
+      <h2>排行榜分数如何计算？</h2>
+      <p>排行榜按分数从高到低排序；当分数相同，会参考提交时间作为排序条件。</p>
     </div>
 
     <div id="lbStatus" class="lb-loading">正在加载排行榜…</div>

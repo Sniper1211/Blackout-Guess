@@ -148,10 +148,15 @@ input, textarea {
 .auth-controls {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
     margin-left: 16px;
     padding-left: 16px;
     border-left: 1px solid var(--border-color);
+}
+
+.auth-name {
+    margin-left: 8px;
+    font-weight: 700;
 }
 
 .user-badge {
@@ -230,7 +235,8 @@ input, textarea {
     font-weight: 900;
 }
 
-.game-header h1 {
+.game-header h1,
+.game-header .game-title {
     font-family: var(--font-serif);
     font-size: 2rem;
     color: var(--secondary-color);
@@ -924,10 +930,83 @@ input, textarea {
     font-family: var(--font-serif);
 }
 
+.seo-content {
+    width: 90%;
+    max-width: 900px;
+    margin: 24px auto 0;
+    background: var(--card-background);
+    padding: 20px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.seo-content-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.seo-toggle {
+    flex: 0 0 auto;
+    background: #fafafa;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.seo-toggle:hover {
+    background: #f3f4f6;
+}
+
+.seo-content-body {
+    margin-top: 8px;
+    overflow: hidden;
+    max-height: 600px;
+    opacity: 1;
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+
+.seo-content--collapsible.is-collapsed .seo-content-body {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+}
+
+.seo-content h2 {
+    font-size: 18px;
+    color: var(--text-color);
+    margin: 0 0 12px 0;
+    font-weight: 700;
+    font-family: var(--font-serif);
+}
+
+.seo-content h3 {
+    font-size: 16px;
+    color: var(--text-color);
+    margin: 16px 0 8px 0;
+    font-weight: 600;
+}
+
+.seo-content p {
+    color: var(--text-light);
+    font-size: 14px;
+    line-height: 1.7;
+    margin: 0;
+}
+
 .help-section {
     margin-bottom: 32px;
 }
 
+.help-section h2,
+.help-section h3,
 .help-section h4 {
     font-size: 18px;
     color: var(--text-color);

@@ -8,6 +8,7 @@
     selectedId: null,
     selectedIds: new Set(),
     settings: { daily_mode_enabled: false },
+    calendarFocused: false,
     pagination: {
       page: 1,
       pageSize: 20,
@@ -92,7 +93,8 @@
         loadAppSettings();
         loadDashboardData(); 
         loadQuestions();
-        loadCalendarData();
+        state.calendarFocused = false;
+        ensureCalendarFocused().then(() => loadCalendarData());
     };
 
     const verifyPassphrase = () => {
@@ -347,9 +349,52 @@
         // 特定页面的加载逻辑
         if (tabId === 'tab-dashboard') loadDashboardData();
         if (tabId === 'tab-list') loadQuestions();
-        if (tabId === 'tab-calendar') loadCalendarData();
+        if (tabId === 'tab-calendar') {
+          ensureCalendarFocused().then(() => loadCalendarData());
+        }
       });
     });
+  }
+
+  async function ensureCalendarFocused() {
+    if (!state.supabase || !state.isAuthorized) return;
+    if (state.calendarFocused) return;
+    state.calendarFocused = true;
+
+    const todayStr = window.DateUtils ? window.DateUtils.getTodayString() : new Date().toISOString().split('T')[0];
+
+    const { data: nextOne, error: nextError } = await state.supabase
+      .from('question_bank')
+      .select('publish_date')
+      .not('publish_date', 'is', null)
+      .gte('publish_date', todayStr)
+      .order('publish_date', { ascending: true })
+      .limit(1);
+
+    if (nextError) return;
+
+    let target = nextOne?.[0]?.publish_date;
+    if (!target) {
+      const { data: lastOne, error: lastError } = await state.supabase
+        .from('question_bank')
+        .select('publish_date')
+        .not('publish_date', 'is', null)
+        .lte('publish_date', todayStr)
+        .order('publish_date', { ascending: false })
+        .limit(1);
+
+      if (lastError) return;
+      target = lastOne?.[0]?.publish_date;
+    }
+
+    if (!target) return;
+
+    const normalized = window.DateUtils ? window.DateUtils.formatDateForStorage(target) : String(target).split('T')[0].slice(0, 10);
+    const d = window.DateUtils ? window.DateUtils.parseDatabaseDate(normalized) : new Date(normalized);
+    if (isNaN(d.getTime())) return;
+
+    state.calYear = d.getFullYear();
+    state.calMonth = d.getMonth();
   }
 
   // --- 题目管理逻辑 ---
